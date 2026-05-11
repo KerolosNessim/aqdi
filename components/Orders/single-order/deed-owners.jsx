@@ -32,7 +32,7 @@ const display = (value) => {
   return value;
 };
 
-const copy = (value) => {
+ const copy = (value) => {
   if (!value) return;
   navigator.clipboard.writeText(value);
   toast.success("تم النسخ بنجاح");
@@ -101,7 +101,6 @@ const orderData = data?.contract_summary
     phone: orderData?.mobile_of_property_owner_agent,
     birthDate: orderData?.dob_of_property_owner_agent,
     nationalId: orderData?.id_num_of_property_owner_agent,
-    iban: orderData?.agent_iban_of_property_owner,
   };
 
   return (
@@ -177,9 +176,7 @@ const orderData = data?.contract_summary
                   <InfoItem value={agent.birthDate} label="تاريخ الميلاد" />
                   <InfoItem value={agent.phone} label="رقم الجوال" />
                   <InfoItem value={agent.name} label="اسم الوكيل" />
-                  <div className="col-span-2">
-                    <InfoItem value={agent.iban} label="ايبان الوكيل" />
-                  </div>
+
                 </div>
               </div>
 

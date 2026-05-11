@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Copy, Edit, FileText, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTrigger } from '@/components/ui/dialog';
 import NotClear from './not-clear';
+import { toast } from 'sonner';
 
+const copy = (value) => {
+  if (!value) return;
+  navigator.clipboard.writeText(value);
+  toast.success("تم النسخ بنجاح");
+};
 const DetailCard = ({ label, value, icon, borderColor = "border-gray-200", highlighted = false, disabled = false }) => {
   const isZero = value === "لا يوجد" || value === 0;
   const isDisabled = disabled || isZero;
@@ -20,7 +26,7 @@ const DetailCard = ({ label, value, icon, borderColor = "border-gray-200", highl
       <div className="flex flex-col gap-1 text-right w-full">
         <span className={`${isDisabled ? 'text-gray-400' : 'text-gray-400'} text-xs font-medium`}>{label}</span>
         <div className="flex items-center gap-2">
-          {icon && <div className="text-gray-400">{icon}</div>}
+          {icon && <div className="text-gray-400 cursor-pointer" onClick={() => copy(value)}>{icon}</div>}
           <span className={`font-bold text-sm lg:text-base ${isDisabled ? 'text-gray-400' : 'text-gray-800'}`}>
             {value}
           </span>
@@ -57,11 +63,12 @@ const UnitDetailes = ({ data }) => {
   ];
 
   const roomDetails = [
-    { label: "دورة مياه", value: data?.step2?.The_number_of_bathrooms || "---", borderColor: "border-blue-500" },
+    {
+      label: "دورة مياه", value: data?.step2?.The_number_of_the_toilet || "---", borderColor: "border-blue-500" },
     { label: "غرفة النوم", value: data?.step2?.tootal_rooms || "---",borderColor: "border-red-400" },
     { label: "الصالة", value: data?.step2?.The_number_of_halls || "---", borderColor: "border-purple-500" },
-    { label: "مكيف سبليت", value: data?.step2?.split_air_conditioners || "لا يوجد", borderColor: "border-gray-200" },
-    { label: "مكيف شباك", value: data?.step2?.window_air_conditioners || "---", borderColor: "border-blue-400" },
+    { label: "مكيف سبليت", value: data?.step2?.split_ac || "لا يوجد", borderColor: "border-gray-200" },
+    { label: "مكيف شباك", value: data?.step2?.window_ac || "لا يوجد", borderColor: "border-blue-400" },
     { label: "مطبخ", value: data?.step2?.The_number_of_kitchens || "---", borderColor: "border-gray-200" },
   ];
 
@@ -73,23 +80,7 @@ const UnitDetailes = ({ data }) => {
   return (
     <div className="p-4 lg:p-6  space-y-8 " dir="rtl">
       {/* Top Status Badge */}
-      <div >
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger>
-            <div className="bg-pink-50 text-pink-600 px-4 py-2 rounded-full flex items-center gap-2 text-xs font-bold border border-pink-100">
-              بانتظار تأكيد بيانات العقار
-              <CheckCircle2 size={14} className="text-pink-600" />
-            </div>
-          </DialogTrigger>
-          <DialogContent closeButton={false}>
-            <DialogHeader>
-              <DialogDescription>
-                <NotClear setOpen={setOpen} />
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
-      </div>
+
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Room Details Section */}

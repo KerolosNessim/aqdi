@@ -1,18 +1,25 @@
 import { Copy, Edit, FileText } from 'lucide-react';
 import React from 'react'
+import { toast } from 'sonner';
 
+const copy = (value) => {
+  if (!value) return;
+  navigator.clipboard.writeText(value);
+  toast.success("تم النسخ بنجاح");
+};
 function ContractTenant({data}) {
   const unitGeneralDetails = [
-    { label: "نــوع المستأجر", value: data?.step3?.tenant_role_name || "---", icon: <Copy size={14} />, borderColor: "border-blue-500" },
+    { label: "صلاحيات المستأجر", value: data?.step3?.tenant_role_names?.map(item => item).join(", ") || "---", icon: <Copy size={14} />, borderColor: "border-blue-500" },
     { label: "رقــم هويـة المستأجر", value: data?.step3?.tenant_id_num || "---", icon: <Copy size={14} />, borderColor: "border-yellow-400" },
     { label: "تــاريخ ميـلاد المستأجر ", value: data?.step3?.tenant_dob || "---", borderColor: "border-blue-600" },
     { label: "رقـم جــوال المستأجر", value: data?.step3?.tenant_mobile || "---", icon: <Copy size={14} />, borderColor: "border-green-500" },
   ];
 
   const roomDetails = [
-    { label: "نوع العقــد", value: data?.step4?.contract_type_name || "---", borderColor: "border-blue-500" },
+    { label: "نوع العقــد", value: data?.contract_summary?.contract_type || "---", borderColor: "border-blue-500" },
     { label: "تــاريخ بدء العقــد", value: data?.step4?.contract_starting_date || "---", borderColor: "border-purple-500" },
-    { label: "مــدة العقــد", value: data?.step4?.contract_duration || "---", borderColor: "border-gray-200" },
+    {
+      label: "مــدة العقــد", value: data?.contract_summary?.contract_period || "---", borderColor: "border-gray-200" },
   ];
   return (
     <div>      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -59,7 +66,7 @@ const DetailCard = ({ label, value, icon, borderColor = "border-gray-200", highl
       <div className="flex flex-col gap-1 text-right w-full">
         <span className={`${isDisabled ? 'text-gray-400' : 'text-gray-400'} text-xs font-medium`}>{label}</span>
         <div className="flex items-center gap-2">
-          {icon && <div className="text-gray-400">{icon}</div>}
+          {icon && <div className="text-gray-400 cursor-pointer" onClick={() => copy(value)}>{icon}</div>}
           <span className={`font-bold text-sm lg:text-base ${isDisabled ? 'text-gray-400' : 'text-gray-800'}`}>
             {value}
           </span>

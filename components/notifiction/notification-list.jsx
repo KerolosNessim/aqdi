@@ -1,12 +1,15 @@
 "use client"
 import React from 'react'
 import NotifictionCard from './notifiction-card'
-import { Clock, Hand, Loader2 } from 'lucide-react'
+import { Clock, Hand, Loader2, X } from 'lucide-react'
 import { LuTimerReset } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { axiosInstance } from '@/src/utils/axios'
+import { useSidebarStore } from '@/src/stores/sidebar-store'
+import { Button } from '../ui/button'
 
 export default function NotificationList() {
+  const {  setDisplayedPart } = useSidebarStore();
   function getUnreceivedOrders() {
     return axiosInstance.get('/admin/orders?is_received=false')
       .then((res) => res?.data)
@@ -29,6 +32,12 @@ export default function NotificationList() {
       <Loader2 className='animate-spin h-12 w-12 text-brand-hover' />
     </div> :
       <div className='space-y-4 '>
+        <div className='flex items-center gap-2'>
+          <p className='font-bold text-lg text-black '>الإشعارات</p>
+          <Button onClick={() => setDisplayedPart('default')} className="size-8 rounded-full flex items-center justify-center ms-auto">
+            <X className='h-4 w-4' />
+          </Button>
+        </div>
         <div className='bg-white rounded-[18px] p-4 border border-[#F0F0F0] shadow flex flex-col gap-3.5' >
           {/* Top Row: Time and Notification Icon */}
           <div className='flex items-center justify-between w-full'>

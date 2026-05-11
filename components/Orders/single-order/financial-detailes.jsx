@@ -1,6 +1,12 @@
 import { Copy, Edit, FileText } from 'lucide-react';
 import React from 'react';
+import { toast } from 'sonner';
 
+const copy = (value) => {
+  if (!value) return;
+  navigator.clipboard.writeText(value);
+  toast.success("تم النسخ بنجاح");
+};
 const DetailCard = ({ label, value, icon, borderColor = "border-gray-200", highlighted = false, disabled = false }) => {
   const isZero = value === "لا يوجد" || value === 0;
   const isDisabled = disabled || isZero;
@@ -18,7 +24,7 @@ const DetailCard = ({ label, value, icon, borderColor = "border-gray-200", highl
       <div className="flex flex-col gap-1 text-right w-full">
         <span className={`${isDisabled ? 'text-gray-400' : 'text-gray-400'} text-xs font-medium`}>{label}</span>
         <div className="flex items-center gap-2">
-          {icon && <div className="text-gray-400">{icon}</div>}
+          {icon && <div className="text-gray-400 cursor-pointer" onClick={() => copy(value)}>{icon}</div>}
           <span className={`font-bold text-sm lg:text-base ${isDisabled ? 'text-gray-400' : 'text-gray-800'}`}>
             {value}
           </span>

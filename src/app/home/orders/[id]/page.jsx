@@ -34,6 +34,7 @@ const OrderDetailsPage = () => {
     queryFn: getSingleOrder,
   })
   const orderData = data?.data?.data
+  console.log({orderData})
 
 
   const tabsButtons = [
@@ -84,9 +85,9 @@ const OrderDetailsPage = () => {
             ))}
             {/* card */}
             <div className='flex items-center gap-2'>
-              <div className='p-3 flex items-center gap-4  rounded-2xl text-xs' style={{ backgroundColor: orderData?.contract_status?.color }}>
+              <div className='p-3 flex items-center gap-4  rounded-2xl text-xs' style={{ backgroundColor: orderData?.contract_summary?.contract_status_color}}>
                 <p className='text-black flex flex-col font-semibold'>حــالة الطلب
-                  <span className='font-normal'>{orderData?.contract_status?.name||"قيد المعالجه"}</span>
+                  <span className='font-normal'>{orderData?.contract_summary?.contract_status_name||"قيد المعالجه"}</span>
                 </p>
                 <ChangeStatusDialog orderId={orderData?.contract_summary?.id} queryKey={['single-order', orderData?.id]} />
               </div>

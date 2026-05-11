@@ -4,11 +4,12 @@ import CommentForm from './comment-form'
 import CommentCard from './comment-card'
 import { useSidebarStore } from '@/src/stores/sidebar-store'
 import { useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { axiosInstance } from '@/src/utils/axios'
+import { Button } from '../ui/button'
 
 export default function CommentList() {
-  const { orderId } = useSidebarStore();
+  const { orderId, setDisplayedPart } = useSidebarStore();
   function getOrderComments() {
     return axiosInstance.get(`/admin/orders/${orderId}/comments`)
       .then((res) => res?.data)
@@ -24,6 +25,13 @@ export default function CommentList() {
   console.log({comments})
   return (
     <div className='flex flex-col gap-6'>
+      <div className='flex items-center gap-2'>
+        <p className='font-bold text-lg text-black '>التعليقات</p>
+        <Button onClick={() => setDisplayedPart('default')} className="size-8 rounded-full flex items-center justify-center ms-auto">
+          <X className='h-4 w-4' />
+        </Button>
+      </div>
+
       <CommentForm  />
 
       <div className='flex flex-col gap-4'>
