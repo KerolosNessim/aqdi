@@ -49,7 +49,7 @@ export default function LoginPage() {
       console.log(response);
       if (response?.success && response?.data?.token) {
         toast.success(response?.message);
-        setAuth(response?.data?.employee, response?.data?.token);
+        setAuth(response?.data, response?.data?.token);
         await setAuthCookie(response?.data?.token);
         router.push('/home');
       }

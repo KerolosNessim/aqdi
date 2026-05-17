@@ -7,8 +7,26 @@ import { FaWhatsapp } from "react-icons/fa6";
 import AddNoteDialog from "./add-note-dialog";
 import AddSalaryDialog from "./add-salary-dialog";
 import AddNewEmployeeDialog from "./add-employee-dialog";
+import BlockEmployeeDialog from "./block-employee-dialog";
+import DeleteEmployeeDialog from "./delete-employee-dialog";
 
-export default function EmployeeDetailsCard() {
+export default function EmployeeDetailsCard({ employee }) {
+  const formatDate = (dateString) => {
+    if (!dateString) return "---";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("ar-EG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div dir="rtl" className="text-right">
       <h2 className="text-lg font-bold">بيــانــات الموظـف :</h2>
@@ -16,52 +34,50 @@ export default function EmployeeDetailsCard() {
         {/* Right Profile Card */}
         <div className="bg-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
 
-          <div className="relative size-28 rounded-full ">
-
+          <div className="relative size-28 rounded-full overflow-hidden border border-gray-200">
             <Image
-              src="/images/defaultUser.jpg" // حط صورة هنا
+              src={employee?.profile_image || "/images/defaultUser.jpg"}
               fill
-              alt="avatar"
-              className=" rounded-full object-cover"
+              alt={employee?.name || "avatar"}
+              className="rounded-full object-cover"
             />
           </div>
-          {/* 
-          <div className='size-30! rounded-full bg-brand-main flex items-center justify-center'>
-            <User className='size-15 text-white' />
-          </div> */}
 
-          <h3 className="mt-3 font-bold text-lg">يوسف عبد الله</h3>
+          <h3 className="mt-3 font-bold text-lg">{employee?.name || "---"}</h3>
           <p className="text-sm text-muted-foreground">
-            موظف خدمة عملاء
+            {employee?.role || "موظف"}
           </p>
 
-          <Button
-            size="icon"
-            className="mt-3 bg-green-600 hover:bg-green-700 text-white rounded-full"
-          >
-            <FaWhatsapp size={18} />
-          </Button>
+          {employee?.phone && (
+            <a
+              href={`https://wa.me/${employee.phone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 bg-green-600 hover:bg-green-700 text-white rounded-full p-2.5 flex items-center justify-center transition-all"
+            >
+              <FaWhatsapp size={18} />
+            </a>
+          )}
         </div>
         {/* Left Section */}
         <div dir='rtl' className="col-span-2 bg-gray-100 rounded-2xl p-4 flex flex-col justify-between">
 
           {/* Top Actions */}
           <div className="flex justify-end items-center gap-3">
-            <AddNewEmployeeDialog isEdit={true} />
-            <AddNoteDialog />
-            <AddSalaryDialog />
-
+            <AddNewEmployeeDialog isEdit={true} employee={employee} />
+            <AddNoteDialog employee={employee} />
+            <AddSalaryDialog employee={employee} />
           </div>
 
           {/* Middle Info */}
           <div className="flex items-center gap-8 mt-6">
             {/* Email */}
             <div className="flex items-center gap-3">
-              <div className="bg-brand-hover text-white p-6 rounded-full">
+              <div className="bg-brand-hover text-white p-4 rounded-full">
                 <Mail size={20} />
               </div>
               <div className="text-right">
-                <p className="font-medium">admin@gmail.com</p>
+                <p className="font-medium">{employee?.email || "---"}</p>
                 <p className="text-sm text-muted-foreground">
                   البريد الإلكتروني
                 </p>
@@ -69,11 +85,13 @@ export default function EmployeeDetailsCard() {
             </div>
             {/* salary */}
             <div className="flex items-center gap-3">
-              <div className="bg-brand-hover text-white p-6 rounded-full">
+              <div className="bg-brand-hover text-white p-4 rounded-full">
                 <Wallet size={20} />
               </div>
               <div className="text-right">
-                <p className="font-medium">2000</p>
+                <p className="font-medium">
+                  {employee?.base_salary ? parseFloat(employee.base_salary).toLocaleString('ar-EG') : "---"}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   الراتب الأساسي
                 </p>
@@ -81,25 +99,25 @@ export default function EmployeeDetailsCard() {
             </div>
           </div>
           {/* Middle Info */}
-          <div className="flex items-center gap-5 mt-10">
+          <div className="flex items-center gap-8 mt-10">
             {/* create date */}
             <div className="flex items-center gap-3">
-              <div className="bg-black text-white p-6 rounded-full">
+              <div className="bg-black text-white p-4 rounded-full">
                 <Clock size={20} />
               </div>
               <div>
-                <p>23:18 - 15 سبتمبر 2025</p>
+                <p className="text-sm font-medium">{formatDate(employee?.created_at)}</p>
                 <p className="text-muted-foreground text-xs">تاريخ الإنشاء</p>
               </div>
             </div>
             {/* update date */}
             <div className="flex items-center gap-3">
-              <div className="bg-black text-white p-6 rounded-full">
+              <div className="bg-black text-white p-4 rounded-full">
                 <Clock size={20} />
               </div>
               <div>
-                <p>23:18 - 15 سبتمبر 2025</p>
-                <p className="text-muted-foreground text-xs">تاريخ الإنشاء</p>
+                <p className="text-sm font-medium">{formatDate(employee?.updated_at)}</p>
+                <p className="text-muted-foreground text-xs">تاريخ التحديث</p>
               </div>
             </div>
 
@@ -108,12 +126,8 @@ export default function EmployeeDetailsCard() {
 
           {/* Bottom Actions */}
           <div className="flex gap-3 mt-4 justify-end ">
-            <Button size="icon" variant="secondary">
-              <Ban size={16} />
-            </Button>
-            <Button size="icon" variant="destructive">
-              <Trash2 size={16} />
-            </Button>
+            <BlockEmployeeDialog employee={employee} />
+            <DeleteEmployeeDialog isSingle={true} employee={employee} />
           </div>
         </div>
 

@@ -9,7 +9,7 @@ import {
 import { FilePenLine, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import AddNoteForm from './add-note-form';
-export default function AddNoteDialog() {
+export default function AddNoteDialog({ employee }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog dir='rtl' open={open} onOpenChange={setOpen}>
@@ -23,12 +23,12 @@ export default function AddNoteDialog() {
         <DialogHeader>
           <div dir='rtl' className='flex items-center justify-between  border-b pb-4'>
             {/* header and close button */}
-            <h2 className='text-xl font-bold'>إضاة ملاحظة جديدة</h2>
+            <h2 className='text-xl font-bold'>إضافة ملاحظة جديدة</h2>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               <X className='w-4 h-4' />
             </Button>
           </div>
-          <AddNoteForm />
+          <AddNoteForm employee={employee} onSuccess={() => setOpen(false)} />
 
         </DialogHeader>
       </DialogContent>

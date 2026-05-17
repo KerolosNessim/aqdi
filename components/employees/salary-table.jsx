@@ -2,7 +2,7 @@ import { Image } from 'lucide-react';
 import React from 'react'
 import ryal from '@/public/images/greenRial.svg';
 
-export default function SalaryTable() {
+export default function SalaryTable({ salaries }) {
   /*-------------------------------------------------------------------------------------*/
   // table headers
   const tableHeaders = [
@@ -13,6 +13,21 @@ export default function SalaryTable() {
     "المكافأة",
     "المجموع",
   ];
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "---";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("ar-EG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div className='mt-4'>
       <h2 className="text-lg font-bold">سجـل الرواتـب و المكـافأة :</h2>
@@ -28,38 +43,44 @@ export default function SalaryTable() {
             </tr>
           </thead>
           <tbody className='max-h-[50vh]! overflow-y-auto no-scrollbar'>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <tr key={index} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
-                <td className="p-[15px_20px]">
-                  <div className='flex items-center gap-2'>
-                    <span className='text-black text-xs'>01 أغسطس 2025</span>
-                  </div>
-                </td>
-                <td className='p-[15px_20px]'>
-                  <span className='text-black  text-xs'>31 أغسطس 2025</span>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-1.5 text-brand-hover font-bold text-[13px]">
-                    <span>249.99</span>
-                  </div>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-1.5 text-black font-bold text-[13px]">
-                    <span>249.99</span>
-                  </div>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-1.5 text-black font-bold text-[13px]">
-                    <span>249.99</span>
-                  </div>
-                </td>
-                <td className='p-[15px_20px]'>
-                  <div className="flex items-center gap-1.5 text-brand- font-bold text-[13px]">
-                    <span>249.99</span>
-                  </div>
+            {salaries && salaries.length > 0 ? (
+              salaries.map((salary) => (
+                <tr key={salary.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
+                  <td className="p-[15px_20px]">
+                    <span className='text-black text-xs'>{formatDate(salary.addition_date)}</span>
+                  </td>
+                  <td className='p-[15px_20px]'>
+                    <span className='text-black text-xs'>{formatDate(salary.due_date)}</span>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <div className="flex items-center gap-1.5 text-brand-hover font-bold text-[13px]">
+                      <span>{parseFloat(salary.basic_salary || 0).toLocaleString('ar-EG')}</span>
+                    </div>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <div className="flex items-center gap-1.5 text-red-500 font-bold text-[13px]">
+                      <span>{parseFloat(salary.deduction || 0).toLocaleString('ar-EG')}</span>
+                    </div>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <div className="flex items-center gap-1.5 text-green-600 font-bold text-[13px]">
+                      <span>{parseFloat(salary.bonus || 0).toLocaleString('ar-EG')}</span>
+                    </div>
+                  </td>
+                  <td className='p-[15px_20px]'>
+                    <div className="flex items-center gap-1.5 text-brand-main font-bold text-[13px]">
+                      <span>{parseFloat(salary.total || 0).toLocaleString('ar-EG')}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={tableHeaders.length} className="text-center p-8 text-[#A3A3A3] text-sm">
+                  لا يوجد سجل رواتب للموظف حالياً.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div >

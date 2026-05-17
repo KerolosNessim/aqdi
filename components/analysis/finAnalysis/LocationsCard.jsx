@@ -2,10 +2,11 @@ import Image from "next/image";
 import rial from "@/public/images/rial.svg";
 import redRial from "@/public/images/redRial.svg";
 import orderIcon from "@/public/images/ordericon.svg";
-export default function LocationsCard({ item }) {
+import Link from "next/link";
 
+export default function LocationsCard({ item }) {
     return (
-        <div className={`flex justify-between items-center p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] max-[1700px]:p-[15px_20px] ${item.type === "onlyNumberTwoSpace" ? "col-span-2" : ""}`}>
+      <div className={`flex justify-between items-center p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] max-[1700px]:p-[15px_20px] ${item.type === "onlyNumberTwoSpace" ? "col-span-2" : ""}`}>
             <div className="flex flex-col gap-3.5">
                 <div className="flex items-center gap-2.5">
                     <span className="text-[#A3A3A3] text-[12px] font-normal">{item.name}</span>
@@ -28,9 +29,9 @@ export default function LocationsCard({ item }) {
                     <Image src={orderIcon} alt="Aakdi" width={16} height={16} />
                 </div>
                 {item.type !== "onlyNumber" && (
-                    <button className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
+                    <Link href={item.link || "#"} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
                         عــرض
-                    </button>
+                    </Link>
                 )}
             </div>
         </div>

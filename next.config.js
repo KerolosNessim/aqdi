@@ -1,7 +1,14 @@
 // next.config.js
 module.exports = {
   images: {
-    domains: ['b3app.co'], // Add your external domain here
+    domains: ["aqid.subcodeco.com", "b3app.co"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "aqid.subcodeco.com",
+        pathname: "/**",
+      },
+    ],
   }, eslint: {
     ignoreDuringBuilds: true,
   },

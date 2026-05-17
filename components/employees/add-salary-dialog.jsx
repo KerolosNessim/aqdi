@@ -9,7 +9,7 @@ import {
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import AddSalaryForm from './add-salry-form';
-export default function AddSalaryDialog() {
+export default function AddSalaryDialog({ employee }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog dir='rtl' open={open} onOpenChange={setOpen}>
@@ -28,7 +28,7 @@ export default function AddSalaryDialog() {
               <X className='w-4 h-4' />
             </Button>
           </div>
-          <AddSalaryForm />
+          <AddSalaryForm employee={employee} onSuccess={() => setOpen(false)} />
         </DialogHeader>
       </DialogContent>
     </Dialog>

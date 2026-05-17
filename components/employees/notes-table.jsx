@@ -2,13 +2,28 @@ import { Image } from 'lucide-react';
 import React from 'react'
 import ryal from '@/public/images/greenRial.svg';
 
-export default function NotesTable() {
+export default function NotesTable({ notes }) {
   /*-------------------------------------------------------------------------------------*/
   // table headers
   const tableHeaders = [
     "تاريخ الإضافة",
     "الملاحظة",
   ];
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "---";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("ar-EG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div className='mt-4'>
       <h2 className="text-lg font-bold">ملاحظات :</h2>
@@ -24,20 +39,24 @@ export default function NotesTable() {
             </tr>
           </thead>
           <tbody className='max-h-[50vh]! overflow-y-auto no-scrollbar'>
-            {Array.from({ length: 3 }).map((_, index) => (
-              <tr key={index} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
-                <td className="p-[15px_20px]">
-                  <div className='flex items-center gap-2'>
-                    <span className='text-black text-sm'>01 أغسطس 2025</span>
-                  </div>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className='flex items-center gap-2'>
-                    <span className='text-black text-xs '>تمت ملاحظة تقصير الموظف في تسليم المهام ضمن الوقت المحدد خلال الشهر الماضي</span>
-                  </div>
+            {notes && notes.length > 0 ? (
+              notes.map((note) => (
+                <tr key={note.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
+                  <td className="p-[15px_20px] whitespace-nowrap">
+                    <span className='text-black text-sm'>{formatDate(note.addition_date)}</span>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <span className='text-black text-xs'>{note.note}</span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={tableHeaders.length} className="text-center p-8 text-[#A3A3A3] text-sm">
+                  لا يوجد ملاحظات للموظف حالياً.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div >

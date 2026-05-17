@@ -17,11 +17,13 @@ export default function AnalsCard({ item }) {
                     item.valueType === "price" ? <Image src={item.type === "totalLoss" ? redRial : rial} alt="Aakdi" width={22} height={22} className="object-contain" /> : <Image src={employeeIcon} alt="Aakdi" width={28} height={28} className="object-contain" />
                 }
             </div>
-            <div className="flex justify-end w-full">
-                <Link href={"#"} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
-                    عــرض
-                </Link>
-            </div>
+            {item.link && (
+                <div className="flex justify-end w-full">
+                    <Link href={item.link} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
+                        عــرض
+                    </Link>
+                </div>
+            )}
         </div>
     );
 }

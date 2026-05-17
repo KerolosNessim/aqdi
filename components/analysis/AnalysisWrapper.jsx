@@ -37,12 +37,26 @@ export default function Statistics() {
         }));
     };
 
+    const getControlPanelLink = (label) => {
+        if (!label) return null;
+        if (label.includes("الموظفين")) return "/home/employees";
+        if (label.includes("المستخدمين")) return null;
+        if (label.includes("المدن")) return "/home/settings/cities";
+        if (label.includes("الوحدات")) return "/home/settings/unit-types";
+        if (label.includes("العقود الغير المكتملة") || label.includes("عقود غير مكتملة")) return "/home/incolpleted-orders-analysis/total";
+        if (label.includes("العقود المكتملة") || label.includes("عقود مكتملة")) return "/home/completed-orders";
+        if (label.includes("عقود مدفوعه")) return null;
+        if (label.includes("اجمالي المدفوعات في العقود") || label.includes("المدفوعات")) return null;
+        return null;
+    };
+
     const analysisData = {
         title: "لوحة التحكم :",
         incomes: apiData.control_panel.map(item => ({
             name: item.label_ar,
             value: item.value,
             valueType: item.type === "currency" ? "price" : "count",
+            link: getControlPanelLink(item.label_ar)
         }))
     };
 
