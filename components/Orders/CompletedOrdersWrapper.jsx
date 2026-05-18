@@ -13,6 +13,7 @@ import Loader from '../home/loader'
 import { Button } from '../ui/button'
 import AddCompleteOrder from './add-complete-order'
 import AddInCompleteOrder from './add-incompleted-order'
+import { useSearchParams } from 'next/navigation'
 
 export default function CompletedOrdersWrapper() {
     const [activeFilter, setActiveFilter] = useState('');
@@ -78,13 +79,21 @@ export default function CompletedOrdersWrapper() {
         queryFn: getStatus
     })
     const statusItems = statusData?.data?.data?.items;
+    const searchParams = useSearchParams();
+    const createdAtParam = searchParams ? searchParams.get('created_at') : null;
+
     /*-------------------------------------------------------------------------------------*/
     // get completed orders
     function getCompletedOrders() {
-        return axiosInstance(`/admin/orders/complete/list?status=${activeFilter}`)
+        let url = `/admin/orders/complete/list?status=${activeFilter}`;
+        if (createdAtParam) {
+            const createAt = createdAtParam === 'total' ? 'all' : createdAtParam;
+            url += `&created_at=${createAt}`;
+        }
+        return axiosInstance(url);
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["completedOrders", activeFilter],
+        queryKey: ["completedOrders", activeFilter, createdAtParam],
         queryFn: getCompletedOrders
     })
     const orders = data?.data?.data ?? []
@@ -93,7 +102,7 @@ export default function CompletedOrdersWrapper() {
     if (isLoading) return <Loader />
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={"جميع الطلبات"} isMain={false} first="الرئيــسية" firstURL="/" second="جميع الطلبات" secondURL="/orders" />
+            <Header page='welcome' title={"الطلبات المكتملة"} isMain={false} first="الرئيــسية" firstURL="/" second="الطلبات المكتملة" secondURL="/home/completed-orders" />
             {/* search */}
             <div className="flex flex-col gap-6  mt-4  relative z-10">
                 {/* add orders */}

@@ -33,7 +33,7 @@ export default function OrdersAnalysisWrapper({ id }) {
                 setTitle('إجمالي الطلبات الغيــر المكتمله')
                 break;
             default:
-                setTitle('طلبات اليــوم الغيــر المكتمله')
+                setTitle('الطلبات الغيــر المكتملة')
                 break;
         }
     }, [id])
@@ -220,15 +220,15 @@ export default function OrdersAnalysisWrapper({ id }) {
     };
 
     function getInCompletedOrders() {
-        return axiosInstance("/admin/orders/incomplete/list")
+        const createAt = id === 'total' ? 'all' : id;
+        return axiosInstance(`/admin/orders/incomplete/list?created_at=${createAt}`)
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["inCompletedOrders"],
+        queryKey: ["inCompletedOrders", id],
         queryFn: getInCompletedOrders
     })
-    console.log(data)
     const orders = data?.data?.data ?? []
-    console.log(orders)
+
 
     if (isLoading) return <Loader />
 

@@ -3,12 +3,14 @@ import React, { useEffect, useState } from 'react'
 import Header from '../../home/Header'
 import greenRial from '@/public/images/greenRial.svg'
 import Image from 'next/image'
-import waIcon from '@/public/images/waIcon.svg'
-import orangerial from '@/public/images/orangerial.svg'
-import Link from 'next/link'
+import { axiosInstance } from '@/src/utils/axios'
+import { useQuery } from '@tanstack/react-query'
+import Loader from '../../home/loader'
+import { ChevronRight, ChevronLeft } from 'lucide-react'
 
 export default function ExpenseAnalysisWrapper({ id }) {
     const [title, setTitle] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
 
     useEffect(() => {
         switch (id) {
@@ -39,18 +41,26 @@ export default function ExpenseAnalysisWrapper({ id }) {
         "الملاحظة",
     ];
 
-    const row =
-    {
-        id: 1,
-        date: "01 أغسطس 2025",
-        price: "249.99",
-        note: "تمت ملاحظة تقصير الموظف في تسليم المهام ضمن الوقت المحدد خلال الشهر الماضي، رغم تنبيهه مسبقًا بضرورة الالتزام بمواعيد التسليم. كما لوحظ ضعف في المتابعة اليومية للطلبات وقلة التفاعل مع الزملاء في فريق العمل. يُرجى من الموظف تحسين مستوى الانضباط والحرص على إنجاز المهام وفق الجدول الزمني المحدد، مع رفع تقارير الأداء بشكل دوري لضمان وضوح سير العمل وجودة النتائج.",
+    function getExpenses(page = 1) {
+        const createAt = id === 'total' ? 'total' : id;
+        return axiosInstance.get(`/admin/finance/expenses?created_at=${createAt}&page=${page}`)
+            .then(res => res.data);
     }
-        ;
+
+    const { data: responseData, isLoading, isError } = useQuery({
+        queryKey: ['expensesAnalysis', id, currentPage],
+        queryFn: () => getExpenses(currentPage),
+    });
+
+    const expenses = responseData?.data?.items || [];
+    const pagination = responseData?.data?.pagination;
+
+    if (isLoading) return <Loader />
+    if (isError) return <div className="text-center p-8 text-[#FA5252] text-[15px]">حدث خطأ أثناء تحميل البيانات</div>
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={title} isMain={false} first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis" third={title} thirdURL={`/home/return-analysis/${id}`} />
+            <Header page='welcome' title={title} isMain={false} first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis" third={title} thirdURL={`/home/expense-analysis/${id}`} />
             
             <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
                 <table className="w-full border-collapse">
@@ -64,43 +74,102 @@ export default function ExpenseAnalysisWrapper({ id }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {Array.from({ length: 10 }).map((_, index) => (
-                            <tr key={index} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
-                                <td className="p-[15px_20px]">
-                                    <div className="text-black text-[13px] font-medium whitespace-nowrap">
-                                        <span>{row.date}</span>
-                                    </div>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <div className="flex items-center gap-1.5 text-[#007C13] font-bold text-[14px]">
-                                        <span>{row.price}</span>
-                                        <Image src={greenRial} alt="rial" width={16} height={16} />
-                                        <i className="fa-solid fa-circle-check text-[12px]"></i>
-                                    </div>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <div className="max-w-[600px] text-[13px] text-[#616161] leading-relaxed text-right line-clamp-2 hover:line-clamp-none transition-all cursor-default">
-                                        <span>{row.note}</span>
-                                    </div>
+                        {expenses && expenses.length > 0 ? (
+                            expenses.map((item) => (
+                                <tr key={item.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
+                                    <td className="p-[15px_20px]">
+                                        <div className="text-black text-[13px] font-medium whitespace-nowrap">
+                                            <span>{new Date(item.created_at).toLocaleDateString('ar-EG')}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-[15px_20px]">
+                                        <div className="flex items-center gap-1.5 text-[#007C13] font-bold text-[14px]">
+                                            <span>{parseFloat(item.amount).toLocaleString('ar-EG')}</span>
+                                            <Image src={greenRial} alt="rial" width={16} height={16} />
+                                        </div>
+                                    </td>
+                                    <td className="p-[15px_20px]">
+                                        <div className="max-w-[600px] text-[13px] text-[#616161] leading-relaxed text-right line-clamp-2 hover:line-clamp-none transition-all cursor-default">
+                                            <span>{item.notes || "—"}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={tableHeaders.length} className="text-center p-8 text-[#A3A3A3] text-sm">
+                                    لا توجد مصروفات متوفرة حالياً.
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
 
-            <div className="flex items-center justify-center gap-2.5 mt-4">
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-right text-[12px]"></i>
-                </button>
-                <button className="w-9 h-9 rounded-full bg-brand-main text-white flex items-center justify-center text-[13px] font-medium shadow-lg shadow-brand-main/20">1</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">2</button>
-                <span className="text-[#A3A3A3]">...</span>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">40</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-left text-[12px]"></i>
-                </button>
-            </div>
+            {/* pagination controls */}
+            {pagination && pagination.last_page > 1 && (
+                <div className="flex items-center justify-center gap-2.5 mt-6" dir="rtl">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+                    >
+                        <ChevronRight className="size-4" />
+                    </button>
+
+                    {(() => {
+                        const pages = [];
+                        const { last_page } = pagination;
+                        const range = 1;
+                        const start = Math.max(1, currentPage - range);
+                        const end = Math.min(last_page, currentPage + range);
+
+                        if (start > 1) {
+                            pages.push(1);
+                            if (start > 2) pages.push('...');
+                        }
+
+                        for (let i = start; i <= end; i++) {
+                            pages.push(i);
+                        }
+
+                        if (end < last_page) {
+                            if (end < last_page - 1) pages.push('...');
+                            pages.push(last_page);
+                        }
+
+                        return pages.map((page, idx) => {
+                            if (page === '...') {
+                                return (
+                                    <span key={`dots-${idx}`} className="text-[#A3A3A3] px-1">
+                                        ...
+                                    </span>
+                                );
+                            }
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium transition-all ${currentPage === page
+                                            ? "bg-brand-main text-white shadow-lg shadow-brand-main/20"
+                                            : "border border-[#E4E4E4] text-[#A3A3A3] hover:bg-[#f5f5f5]"
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            );
+                        });
+                    })()}
+
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.min(pagination.last_page, prev + 1))}
+                        disabled={currentPage === pagination.last_page}
+                        className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+                    >
+                        <ChevronLeft className="size-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

@@ -22,8 +22,10 @@ export default function Statistics() {
     if (isLoading) return <div className="flex items-center justify-center h-screen">Loading...</div>
     if (isError) return <div className="flex items-center justify-center h-screen">Error loading data</div>
     if (!statisticsData?.data) return null;
+    
 
     const apiData = statisticsData.data;
+    console.log({apiData})
 
     const formatMap = (obj, basePath, valueType = "price") => {
         if (!obj) return [];
@@ -50,6 +52,16 @@ export default function Statistics() {
         return null;
     };
 
+    const getOrderAnalyticsLink = (label) => {
+        if (!label) return "/home/orders-analysis";
+        if (label.includes("الطلبات المكتملة")) return "/home/completed-orders?created_at=total";
+        if (label.includes("الطلبات غير المكتملة")) return "/home/incolpleted-orders-analysis/total";
+        if (label.includes("واتساب مكتملة") || label.includes("واتساب المكتملة")) return "/home/completed-whatsapp";
+        if (label.includes("واتساب غير مكتملة") || label.includes("واتساب الغير مكتملة")) return "/home/incompleted-whatsapp";
+        if (label.includes("مسترجعه") || label.includes("مسترجعة")) return "/home/return-analysis/total";
+        return null;
+    };
+
     const analysisData = {
         title: "لوحة التحكم :",
         incomes: apiData.control_panel.map(item => ({
@@ -64,7 +76,14 @@ export default function Statistics() {
         {
             title: "التحليــلات المــاليــة :",
             incomes: formatMap(apiData.financial_analytics.income, "/home/financial-analysis"),
-            orders: formatMap(apiData.financial_analytics.completed_orders, "/home/orders-analysis", "count"),
+            orders: Object.entries(apiData.financial_analytics.completed_orders || {}).map(([key, item]) => ({
+                name: item.label_ar,
+                value: item.value,
+                valueType: "count",
+                percentage: item.percentage_change !== null ? `${item.percentage_change >= 0 ? '+' : ''}${item.percentage_change}%` : null,
+                type: key === "total" ? "total-regular" : key,
+                link: `/home/completed-orders?created_at=${key}`
+            })),
             incompleteOrders: formatMap(apiData.financial_analytics.incomplete_orders, "/home/incolpleted-orders-analysis", "count"),
             returns: formatMap(apiData.financial_analytics.refunds, "/home/return-analysis"),
             expenses: formatMap(apiData.financial_analytics.expenses, "/home/expense-analysis"),
@@ -132,7 +151,7 @@ export default function Statistics() {
                 value: item.value + (item.type === "percentage" ? "%" : ""),
                 valueType: "count",
                 type: item.type === "percentage" ? "onlyNumber" : "regular",
-                link: "/home/orders-analysis"
+                link: getOrderAnalyticsLink(item.label_ar)
             }))
         }
     ];
@@ -211,7 +230,7 @@ export default function Statistics() {
                                 ))}
                             </main>
                             <main className="grid grid-cols-5 gap-2.5 w-full mb-2.5">
-                                {item.orders.map((card, index) => (
+                                {item?.orders?.map((card, index) => (
                                     <DayCard key={index} item={card} />
                                 ))}
                             </main>
