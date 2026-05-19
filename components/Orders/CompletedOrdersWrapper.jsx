@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import greenRial from '@/public/images/greenRial.svg'
 import Image from 'next/image'
 import waIcon from '@/public/images/waIcon.svg'
@@ -14,9 +14,20 @@ import { Button } from '../ui/button'
 import AddCompleteOrder from './add-complete-order'
 import AddInCompleteOrder from './add-incompleted-order'
 import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 export default function CompletedOrdersWrapper() {
+    const router = useRouter()
     const [activeFilter, setActiveFilter] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
     const [refundModalStep, setRefundModalStep] = useState(0); // 0: closed, 1: form, 2: submitted, 3: success
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [refundDraftNumber, setRefundDraftNumber] = useState('');
@@ -90,10 +101,13 @@ export default function CompletedOrdersWrapper() {
             const createAt = createdAtParam === 'total' ? 'all' : createdAtParam;
             url += `&created_at=${createAt}`;
         }
+        if (debouncedSearchQuery) {
+            url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
+        }
         return axiosInstance(url);
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["completedOrders", activeFilter, createdAtParam],
+        queryKey: ["completedOrders", activeFilter, createdAtParam, debouncedSearchQuery],
         queryFn: getCompletedOrders
     })
     const orders = data?.data?.data ?? []
@@ -117,7 +131,13 @@ export default function CompletedOrdersWrapper() {
                                 <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
                                 <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                             </svg>
-                            <input type="text" placeholder="البحث الذكي ...!" className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner" />
+                            <input
+                                type="text"
+                                placeholder="البحث الذكي ...!"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
+                            />
                         </div>
 
                     </div>
@@ -226,7 +246,7 @@ export default function CompletedOrdersWrapper() {
                                 </td>
                                 <td className="p-[15px_20px]">
                                     <div className='flex items-center gap-2'>
-                                        <button className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all">
+                                        <button onClick={() => { router.push(`/home/orders/${row.id}`) }} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all">
                                             👁️
                                         </button>
                                     </div>

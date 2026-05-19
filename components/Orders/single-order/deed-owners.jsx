@@ -25,7 +25,7 @@ import {
 import NotClear from "./not-clear";
 import NotClearAgent from "./not-clear-agent";
 
-const fallbackImage = "/images/aqd.png";
+
 
 const display = (value) => {
   if (value === null || value === undefined || value === "") return "--";
@@ -60,9 +60,9 @@ const orderData = data?.contract_summary
 
   /* ================= Images ================= */
   let images = [
-    orderData?.image_instrument || "/images/aqd.png",
-    orderData?.image_instrument_from_the_front || "/images/aqd.png",
-    orderData?.image_instrument_from_the_back || "/images/aqd.png",
+    orderData?.image_instrument ,
+    orderData?.image_instrument_from_the_front ,
+    orderData?.image_instrument_from_the_back ,
   ]
     .filter(Boolean)
     .map((img) => ({
@@ -72,10 +72,6 @@ const orderData = data?.contract_summary
 
   if (images.length === 0) {
     images = [
-      {
-        original: fallbackImage,
-        thumbnail: fallbackImage,
-      },
     ];
   }
 
@@ -106,6 +102,7 @@ const orderData = data?.contract_summary
   return (
     <div className="flex items-start gap-4" dir="rtl">
       {/* images */}
+      {images.length > 0 && (
       <div className="w-1/3">
         <div className="flex items-center gap-1 text-xs">
           <p>صـورة الصك :</p>
@@ -115,10 +112,12 @@ const orderData = data?.contract_summary
           </Button>
         </div>
 
+        
         <div dir="ltr" className="bg-gray-200 p-6 rounded-3xl">
           <ImageGallery ref={galleryRef} items={images} />
         </div>
       </div>
+      )}
 
       {/* info */}
       <div className="w-2/3 space-y-10">

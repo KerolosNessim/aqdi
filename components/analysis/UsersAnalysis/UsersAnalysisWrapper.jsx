@@ -39,6 +39,24 @@ export default function UsersAnalysisWrapper({ id }) {
             case 'total':
                 setTitle('إجمالي المستخدمين الجدد')
                 break;
+            case 'top_completed_orders':
+                setTitle('أكثر العملاء طلب مكتمل')
+                break;
+            case 'top_incompleted_orders':
+                setTitle('أكثر العملاء طلب غير مكتمل')
+                break;
+            case 'top_orders':
+                setTitle('أكثر العملاء طلبات')
+                break;
+            case 'top_refunds':
+                setTitle('أكثر العملاء استرجاع')
+                break;
+            case 'top_properties':
+                setTitle('أكثر العملاء عقارات')
+                break;
+            case 'top_units':
+                setTitle('أكثر العملاء وحدات')
+                break;
             default:
                 setTitle('المستخدمين')
                 break;
@@ -61,6 +79,31 @@ export default function UsersAnalysisWrapper({ id }) {
     ];
 
     function getUsers(page = 1) {
+        if (id === 'top_completed_orders') {
+            return axiosInstance.get(`/admin/analytics/top-customers/completed-orders?page=${page}`)
+                .then(res => res.data);
+        }
+        if (id === 'top_incompleted_orders') {
+            return axiosInstance.get(`/admin/analytics/top-customers/incomplete-orders?page=${page}`)
+                .then(res => res.data);
+        }
+        if (id === 'top_orders') {
+            return axiosInstance.get(`/admin/analytics/top-customers/orders?page=${page}`)
+                .then(res => res.data);
+        }
+        if (id === 'top_refunds') {
+            return axiosInstance.get(`/admin/analytics/top-customers/returns?page=${page}`)
+                .then(res => res.data);
+        }
+        if (id === 'top_properties') {
+            return axiosInstance.get(`/admin/analytics/top-customers/real-estates?page=${page}`)
+                .then(res => res.data);
+        }
+        if (id === 'top_units') {
+            return axiosInstance.get(`/admin/analytics/top-customers/units?page=${page}`)
+                .then(res => res.data);
+        }
+
         let createAt = id;
         if (id === 'day') createAt = 'today';
         return axiosInstance.get(`/admin/users?created_at=${createAt}&page=${page}`)
@@ -73,8 +116,8 @@ export default function UsersAnalysisWrapper({ id }) {
     });
 
     const rawData = responseData?.data;
-    const isPaginated = rawData && !Array.isArray(rawData) && Array.isArray(rawData.items);
-    const usersList = isPaginated ? rawData.items : (Array.isArray(rawData) ? rawData : []);
+    const isPaginated = rawData && !Array.isArray(rawData) && Array.isArray(rawData.items) && !!rawData.pagination;
+    const usersList = isPaginated ? rawData.items : (rawData?.items ? rawData.items : (Array.isArray(rawData) ? rawData : []));
     
     // Pagination math (Supports both flat arrays and paginated responses)
     const ITEMS_PER_PAGE = 10;
@@ -86,7 +129,7 @@ export default function UsersAnalysisWrapper({ id }) {
         ? rawData.pagination 
         : {
             current_page: currentPage,
-            last_page: Math.ceil(usersList.length / ITEMS_PER_PAGE),
+            last_page: Math.max(1, Math.ceil(usersList.length / ITEMS_PER_PAGE)),
             total: usersList.length
           };
 

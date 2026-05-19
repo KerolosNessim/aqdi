@@ -20,7 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@/src/utils/axios';
 import { toast } from 'sonner';
 
-export default function AddNewMessageForClientDialog({ isEdit, messageAlert }) {
+export default function AddNewMessageForEmployeeDialog({ isEdit, messageAlert }) {
   const [open, setOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState("");
   const [selectedItem, setSelectedItem] = useState("");
@@ -39,19 +39,18 @@ export default function AddNewMessageForClientDialog({ isEdit, messageAlert }) {
 
   // Fetch sections
   const { data: sectionsData } = useQuery({
-    queryKey: ["message-alert-sections"],
-    queryFn: () => axiosInstance.get("admin/message-alert-sections/client/options/list").then(res => res.data),
+    queryKey: ["message-alert-sections-employee"],
+    queryFn: () => axiosInstance.get("admin/message-alert-sections/employee/options/list").then(res => res.data),
     enabled: open
   });
   const sections = sectionsData?.data?.items || sectionsData?.data || [];
 
   // Fetch section items
   const { data: itemsData } = useQuery({
-    queryKey: ["message-alert-section-items", selectedSection],
-    queryFn: () => axiosInstance.get(`/admin/message-alert-section-items?type=client&message_alert_section_id=${selectedSection}`).then(res => res.data),
+    queryKey: ["message-alert-section-items-employee", selectedSection],
+    queryFn: () => axiosInstance.get(`/admin/message-alert-section-items?type=employee&message_alert_section_id=${selectedSection}`).then(res => res.data),
     enabled: open && !!selectedSection
   });
-
 
   const currentSectionObj = sections.find(s => s.id?.toString() === selectedSection);
   const items = currentSectionObj?.items || itemsData?.data?.items || itemsData?.data || [];
@@ -60,15 +59,15 @@ export default function AddNewMessageForClientDialog({ isEdit, messageAlert }) {
   const mutation = useMutation({
     mutationFn: (payload) => {
       if (isEdit && messageAlert?.id) {
-        return axiosInstance.post(`/admin/message-alerts/client/${messageAlert.id}`, payload);
+        return axiosInstance.post(`/admin/message-alerts/employee/${messageAlert.id}`, payload);
       } else {
-        return axiosInstance.post("/admin/message-alerts/client", payload);
+        return axiosInstance.post("/admin/message-alerts/employee", payload);
       }
     },
     onSuccess: (res) => {
       toast.success(res?.data?.message || (isEdit ? "تم تعديل الرسالة بنجاح" : "تم إضافة الرسالة بنجاح"));
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["message-alerts-client"] });
+      queryClient.invalidateQueries({ queryKey: ["message-alerts-employee"] });
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || "حدث خطأ ما");
@@ -103,7 +102,7 @@ export default function AddNewMessageForClientDialog({ isEdit, messageAlert }) {
       </DialogTrigger>
       <DialogContent closeButton={false} className="max-w-3xl">
         <DialogHeader>
-          <div className='flex items-center justify-between  border-b pb-6'>
+          <div className='flex items-center justify-between border-b pb-6'>
             {/* header and close button */}
             <h2 className='text-xl font-bold'>إضــافة رساله جديدة</h2>
             <Button variant="ghost" onClick={() => setOpen(false)}>
@@ -174,7 +173,7 @@ export default function AddNewMessageForClientDialog({ isEdit, messageAlert }) {
             <Button
               disabled={mutation.isPending}
               onClick={handleSubmit}
-              className="mx-auto block  h-12 bg-brand-hover "
+              className="mx-auto block h-12 bg-brand-hover"
             >
               {mutation.isPending ? <Loader2 className='animate-spin mx-auto' /> : (isEdit ? "تعديل" : "إضافة")}
             </Button>

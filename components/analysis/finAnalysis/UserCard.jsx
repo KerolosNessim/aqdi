@@ -28,7 +28,7 @@ export default function UserCard({ item }) {
                 <div className="w-[30px] h-[30px] rounded-full bg-[#FAFAFA] flex items-center justify-center">
                     <Image src={userIcon} alt="Aakdi" width={16} height={16} />
                 </div>
-                {item.type !== "onlyNumber" && (
+                {(item.type !== "onlyNumber" || item.link) && (
                     <Link href={item.link || "#"} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
                         عــرض
                     </Link>

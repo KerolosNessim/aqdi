@@ -2,31 +2,40 @@
 import React from 'react';
 import Header from '@/components/home/Header';
 import { Button } from '@/components/ui/button';
-import AddNewMessageForEmployeeDialog from '@/components/analysis/settings/message-for-employees/add-message-for-employee';
-import DisplayMessageForEmployeeDialog from '@/components/analysis/settings/message-for-employees/display-message-for-employee';
+import AddNewMessageForPropertyDialog from '@/components/analysis/settings/message-for-property/add-message-for-property';
+import DisplayMessageForPropertyDialog from '@/components/analysis/settings/message-for-property/display-message-for-property';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@/src/utils/axios';
 import { toast } from 'sonner';
 import Loader from '@/components/home/loader';
 import { Trash2, Loader2 } from 'lucide-react';
 
-export default function EmployeeTermsPage() {
+export default function PropertyTermsPage() {
   const queryClient = useQueryClient();
 
-  // Fetch employee message alerts
+  // Fetch property message alerts
   const { data: alertsResponse, isLoading } = useQuery({
-    queryKey: ["message-alerts-employee"],
-    queryFn: () => axiosInstance.get("/admin/message-alerts/employee").then(res => res.data)
+    queryKey: ["message-alerts-property"],
+    queryFn: () => axiosInstance.get("/admin/message-alerts/property").then(res => res.data)
   });
 
   const alerts = alertsResponse?.data?.items || alertsResponse?.data || [];
 
-  // Delete mutation
+  // Delete mutation supporting both POST and DELETE endpoints
   const deleteMutation = useMutation({
-    mutationFn: (id) => axiosInstance.post(`/admin/message-alerts/employee/${id}/delete`),
+    mutationFn: async (id) => {
+      try {
+        return await axiosInstance.post(`/admin/message-alerts/property/${id}/delete`);
+      } catch (e) {
+        if (e.response?.status === 404 || e.response?.status === 405) {
+          return await axiosInstance.delete(`/admin/message-alerts/property/${id}`);
+        }
+        throw e;
+      }
+    },
     onSuccess: (res) => {
       toast.success(res?.data?.message || "تم حذف الرسالة بنجاح");
-      queryClient.invalidateQueries({ queryKey: ["message-alerts-employee"] });
+      queryClient.invalidateQueries({ queryKey: ["message-alerts-property"] });
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || "حدث خطأ أثناء حذف الرسالة");
@@ -45,13 +54,13 @@ export default function EmployeeTermsPage() {
         firstURL="/" 
         second='الإعـدادات' 
         secondURL="/home/settings" 
-        third="رســائل توضيحية للموظفيــن" 
-        thirdURL="/home/settings/message-for-employee" 
+        third="رســائل توضيحية للعقــار" 
+        thirdURL="/home/settings/message-for-property" 
       />
 
       <div className='flex items-center justify-between'>
-        <h2 className='text-xl font-bold'>رســائل توضيحية للموظفيــن</h2>
-        <AddNewMessageForEmployeeDialog isEdit={false} />
+        <h2 className='text-xl font-bold'>رســائل توضيحية للعقــار</h2>
+        <AddNewMessageForPropertyDialog isEdit={false} />
       </div>
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4'>
@@ -60,7 +69,7 @@ export default function EmployeeTermsPage() {
             <div className='flex items-center justify-between'>
               <h3>{item.section?.name_ar || 'بدون قسم'}</h3>
               <div className='flex items-center gap-2'>
-                <AddNewMessageForEmployeeDialog isEdit={true} messageAlert={item} />
+                <AddNewMessageForPropertyDialog isEdit={true} messageAlert={item} />
                 <Button 
                   disabled={deleteMutation.isPending} 
                   onClick={() => deleteMutation.mutate(item.id)} 
@@ -76,7 +85,7 @@ export default function EmployeeTermsPage() {
             </div>
             <div className=' mt-4 flex items-center justify-between'>
               <p>{item?.message || 'بدون بند'}</p>
-              <DisplayMessageForEmployeeDialog messageAlert={item} />
+              <DisplayMessageForPropertyDialog messageAlert={item} />
             </div>
           </div>
         ))}

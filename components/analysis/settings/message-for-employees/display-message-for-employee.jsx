@@ -9,7 +9,7 @@ import {
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
-export default function DisplayMessageForClientDialog({ messageAlert }) {
+export default function DisplayMessageForEmployeeDialog({ messageAlert }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -21,7 +21,7 @@ export default function DisplayMessageForClientDialog({ messageAlert }) {
       </DialogTrigger>
       <DialogContent closeButton={false} className="max-w-3xl">
         <DialogHeader>
-          <div className='flex items-center justify-between  border-b pb-6'>
+          <div className='flex items-center justify-between border-b pb-6'>
             {/* header and close button */}
             <h2 className='text-xl font-bold'>عرض رســالة توضيحية جديدة</h2>
             <Button variant="ghost" onClick={() => setOpen(false)}>
@@ -30,7 +30,6 @@ export default function DisplayMessageForClientDialog({ messageAlert }) {
           </div>
 
           <div className='space-y-4'>
-
             <div className='bg-gray-200 p-4 rounded space-y-4'>
               <div className='flex items-center justify-between'>
                 <p>القسم</p>
@@ -46,19 +45,16 @@ export default function DisplayMessageForClientDialog({ messageAlert }) {
                 <p>الرسالة التوضيحية</p>
                 <p>{messageAlert?.message || '---'}</p>
               </div>
-
             </div>
 
-
-            {/* زر الإضافة */}
+            {/* زر الإغلاق */}
             <Button
               onClick={() => setOpen(false)}
-              className="mx-auto block  h-12 bg-brand-hover "
+              className="mx-auto block h-12 bg-brand-hover"
             >
               اغلاق
             </Button>
           </div>
-
         </DialogHeader>
       </DialogContent>
     </Dialog>

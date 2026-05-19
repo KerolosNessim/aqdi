@@ -25,7 +25,6 @@ export default function Statistics() {
     
 
     const apiData = statisticsData.data;
-    console.log({apiData})
 
     const formatMap = (obj, basePath, valueType = "price") => {
         if (!obj) return [];
@@ -58,7 +57,7 @@ export default function Statistics() {
         if (label.includes("الطلبات غير المكتملة")) return "/home/incolpleted-orders-analysis/total";
         if (label.includes("واتساب مكتملة") || label.includes("واتساب المكتملة")) return "/home/completed-whatsapp";
         if (label.includes("واتساب غير مكتملة") || label.includes("واتساب الغير مكتملة")) return "/home/incompleted-whatsapp";
-        if (label.includes("مسترجعه") || label.includes("مسترجعة")) return "/home/return-analysis/total";
+        if (label.includes("مسترجعه") || label.includes("مسترجعة")) return "/home/return-orders?created_at=total";
         return null;
     };
 
@@ -85,10 +84,19 @@ export default function Statistics() {
                 link: `/home/completed-orders?created_at=${key}`
             })),
             incompleteOrders: formatMap(apiData.financial_analytics.incomplete_orders, "/home/incolpleted-orders-analysis", "count"),
-            returns: formatMap(apiData.financial_analytics.refunds, "/home/return-analysis"),
+            returns: Object.entries(apiData.financial_analytics.refunds || {}).map(([key, item]) => ({
+                name: item.label_ar,
+                value: item.value,
+                valueType: "price",
+                percentage: item.percentage_change !== null ? `${item.percentage_change >= 0 ? '+' : ''}${item.percentage_change}%` : null,
+                type: key === "total" ? "total" : key,
+                link: `/home/return-orders?created_at=${key}`
+            })),
             expenses: formatMap(apiData.financial_analytics.expenses, "/home/expense-analysis"),
         }
     ];
+
+
 
     const UserData = [
         {
@@ -100,42 +108,42 @@ export default function Statistics() {
                     value: `${apiData.user_analytics.user_activity_rate.value}%`,
                     valueType: "count",
                     type: "onlyNumber",
-                    link: "/home/user-analysis/regular"
                 },
                 {
                     name: apiData.user_analytics.most_clients_completed_requests.label_ar,
                     value: apiData.user_analytics.most_clients_completed_requests.value,
                     type: "onlyNumber",
-                },
-                {
-                    name: "اكثر العملاء طلب مكتمل",
-                    type: "onlyButton",
                     link: "/home/user-analysis/top_completed_orders"
                 },
                 {
-                    name: "اكثر العملاء طلب غير مكتمل",
+                    name: apiData.user_analytics.most_clients_incomplete_requests?.label_ar || "اكثر العملاء طلب غير مكتمل",
+                    value: apiData.user_analytics.most_clients_incomplete_requests?.value,
                     type: "onlyNumberTwoSpace",
                     link: "/home/user-analysis/top_incompleted_orders"
                 }
             ],
             userOrders: [
                 {
-                    name: "اكثر العملاء طلبـــات",
+                    name: apiData.user_analytics.most_clients_requests?.label_ar || "اكثر العملاء طلبـــات",
+                    value: apiData.user_analytics.most_clients_requests?.value,
                     type: "onlyButton",
                     link: "/home/user-analysis/top_orders"
                 },
                 {
-                    name: "اكثر العملاء استرجاع ",
+                    name: apiData.user_analytics.most_clients_returns?.label_ar || "اكثر العملاء استرجاع ",
+                    value: apiData.user_analytics.most_clients_returns?.value,
                     type: "onlyButton",
                     link: "/home/user-analysis/top_refunds"
                 },
                 {
-                    name: "اكثر العملاء عقارات",
+                    name: apiData.user_analytics.most_clients_real_estate?.label_ar || "اكثر العملاء عقارات",
+                    value: apiData.user_analytics.most_clients_real_estate?.value,
                     type: "onlyButton",
                     link: "/home/user-analysis/top_properties"
                 },
                 {
-                    name: "اكثر العملاء وحدات",
+                    name: apiData.user_analytics.most_clients_units?.label_ar || "اكثر العملاء وحدات",
+                    value: apiData.user_analytics.most_clients_units?.value,
                     type: "onlyNumberTwoSpace",
                     link: "/home/user-analysis/top_units"
                 }
@@ -158,14 +166,30 @@ export default function Statistics() {
 
     const EmployeesData = [
         {
-            title: "تحليــلات الموضفيــن : ",
-            employeesAnalysis: apiData.employee_analytics.map(item => ({
-                name: item.label_ar,
-                value: item.value,
-                valueType: item.type === "currency" ? "price" : "count",
-                type: Array.isArray(item.value) ? "arrayOfNames" : "regular",
-                link: "/home/staff-analysis"
-            }))
+            title: "تحليــلات الموظفيــن : ",
+            employeesAnalysis: apiData.employee_analytics.map(item => {
+                let cardId = "total";
+                const key = (item.key || "").toLowerCase();
+                const label = item.label_ar || "";
+                
+                if (key.includes("received") || label.includes("استلم") || label.includes("المستلمة")) {
+                    cardId = "most_received_orders";
+                } else if (key.includes("completed") || label.includes("وثق") || label.includes("المكتملة")) {
+                    cardId = "most_completed_orders";
+                } else if (key.includes("incomplete") || key.includes("incompleted") || label.includes("غير مدفوع") || label.includes("الغير مدفوع")) {
+                    cardId = "most_incompleted_orders";
+                } else if (key.includes("refund") || key.includes("return") || label.includes("استرجاع") || label.includes("المرتجعة")) {
+                    cardId = "most_refunded_orders";
+                }
+
+                return {
+                    name: item.label_ar,
+                    value: item.value,
+                    valueType: item.type === "currency" ? "price" : "count",
+                    type: Array.isArray(item.value) ? "arrayOfNames" : "regular",
+                    link: `/home/staff-analysis/${cardId}`
+                };
+            })
 
         }
     ];
@@ -205,6 +229,10 @@ export default function Statistics() {
             }))
         }
     ];
+
+
+    console.log(LocationsData, apiData.location_analytics);
+    
 
     return (
         <>
@@ -261,7 +289,7 @@ export default function Statistics() {
                                     <UserCard key={index} item={card} />
                                 ))}
                             </main>
-                            <main className="grid grid-cols-5 gap-2.5 w-full mb-2.5">
+                            <main className="grid grid-cols-4 gap-2.5 w-full mb-2.5">
                                 {item.userAvtivity.map((card, index) => (
                                     <UserCard key={index} item={card} />
                                 ))}

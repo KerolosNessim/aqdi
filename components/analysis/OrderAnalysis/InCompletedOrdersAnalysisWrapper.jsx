@@ -14,6 +14,15 @@ import { useRouter } from 'next/navigation'
 export default function OrdersAnalysisWrapper({ id }) {
     const router = useRouter()
     const [title, setTitle] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     useEffect(() => {
         switch (id) {
@@ -221,10 +230,14 @@ export default function OrdersAnalysisWrapper({ id }) {
 
     function getInCompletedOrders() {
         const createAt = id === 'total' ? 'all' : id;
-        return axiosInstance(`/admin/orders/incomplete/list?created_at=${createAt}`)
+        let url = `/admin/orders/incomplete/list?created_at=${createAt}`;
+        if (debouncedSearchQuery) {
+            url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
+        }
+        return axiosInstance(url)
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["inCompletedOrders", id],
+        queryKey: ["inCompletedOrders", id, debouncedSearchQuery],
         queryFn: getInCompletedOrders
     })
     const orders = data?.data?.data ?? []
@@ -236,6 +249,24 @@ export default function OrdersAnalysisWrapper({ id }) {
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
             <Header page='welcome' title={title} isMain={false} first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis" third={title} thirdURL={`/home/financial-analysis/${id}`} />
+
+            <div className="space-y-4 w-full mt-4">
+                <div className="flex items-center gap-3">
+                    <div className="relative grow">
+                        <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3]" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
+                            <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="البحث الذكي ...!"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
+                        />
+                    </div>
+                </div>
+            </div>
 
             <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4">
                 <table className="w-full border-collapse">
@@ -304,7 +335,7 @@ export default function OrdersAnalysisWrapper({ id }) {
                                 </td>
                                 <td className="p-[15px_20px]">
 
-                                    <button className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all mx-auto">
+                                    <button onClick={() => { router.push(`/home/orders/${row.id}`) }} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all mx-auto">
                                         👁️
                                     </button>
                                 </td>

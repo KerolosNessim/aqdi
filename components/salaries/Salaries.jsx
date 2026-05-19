@@ -46,6 +46,7 @@ export default function Salaries() {
         "المسمي الوظيفي",
         "الراتب الاساسي",
         "رقــم الجـوال",
+        "البريد الاكتروني",
         "الاجـــراءات",
     ];
 
@@ -67,13 +68,13 @@ export default function Salaries() {
                 thirdURL="/home/salaries"
             />
 
-            <div className="flex flex-col gap-6 bg-white rounded-[24px] border border-[#E4E4E4] p-6 mt-4 shadow-sm relative z-10">
-                <div className="flex items-center justify-between pb-6 border-b border-[#F5F5F5]">
+            <div className="flex flex-col gap-6 bg-white  mt-4 shadow-sm relative z-10">
+                <div className="flex items-center justify-between ">
                     <h2 className="text-[18px] font-black text-black">قائمة الموظفيـن</h2>
                     <AddNewEmployeeDialog/>
                 </div>
                 {/* page content */}
-                <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
+                <div className="w-full overflow-x-auto bg-white rounded-[24px]  mt-4 shadow-sm">
                     <table className="w-full border-collapse">
                         <thead className="bg-[#FAFAFA]">
                             <tr>
@@ -124,6 +125,9 @@ export default function Salaries() {
                                         </td>
                                         <td className='p-[15px_20px]'>
                                             <span className='text-black text-xs' dir="ltr">{employee.phone || '---'}</span>
+                                        </td>
+                                        <td className='p-[15px_20px]'>
+                                            <span className='text-black text-xs' >{employee.email || '---'}</span>
                                         </td>
 
                                         <td className='p-[15px_20px]'>

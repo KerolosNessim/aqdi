@@ -14,9 +14,16 @@ import { useRouter } from 'next/navigation'
 
 export default function AllOrdersWrapper({ id }) {
     const [activeFilter, setActiveFilter] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const router = useRouter()
 
-
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     /*-------------------------------------------------------------------------------------*/
     // table headers
@@ -47,10 +54,14 @@ export default function AllOrdersWrapper({ id }) {
     /*-------------------------------------------------------------------------------------*/
     // get all orders
     function getAllOrders() {
-        return axiosInstance(`/admin/orders?contract_status_id=${activeFilter}`)
+        let url = `/admin/orders?contract_status_id=${activeFilter}`;
+        if (debouncedSearchQuery) {
+            url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
+        }
+        return axiosInstance(url);
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["orders", activeFilter],
+        queryKey: ["orders", activeFilter, debouncedSearchQuery],
         queryFn: getAllOrders
     })
     const orders = data?.data?.data ?? []
@@ -74,7 +85,13 @@ export default function AllOrdersWrapper({ id }) {
                                 <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
                                 <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                             </svg>
-                            <input type="text" placeholder="البحث الذكي ...!" className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner" />
+                            <input
+                                type="text"
+                                placeholder="البحث الذكي ...!"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
+                            />
                         </div>
                     </div>
                 </div>
