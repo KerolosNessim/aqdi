@@ -11,7 +11,7 @@ import { Button } from '../ui/button'
 export default function NotificationList() {
   const {  setDisplayedPart } = useSidebarStore();
   function getUnreceivedOrders() {
-    return axiosInstance.get('/admin/orders?is_received=false')
+    return axiosInstance.get('/admin/orders?is_received=false&per_page=100')
       .then((res) => res?.data)
       .catch((err) => {
         throw err;
@@ -22,8 +22,9 @@ export default function NotificationList() {
     queryFn: getUnreceivedOrders
   })
 
-  const unreceivedOrders = data?.data
-  console.log(unreceivedOrders)
+  const responseData = data?.data;
+  const unreceivedOrders = responseData?.items ?? (Array.isArray(responseData) ? responseData : []);
+  const totalCount = responseData?.pagination?.total ?? unreceivedOrders.length;
 
 
 
@@ -48,12 +49,12 @@ export default function NotificationList() {
           </div>
 
           <p className='font-black text-black text-4xl flex items-center gap-2'>
-            {unreceivedOrders?.length}
+            {totalCount}
             <LuTimerReset className='text-green-700' />
 
           </p>
         </div>
-        {unreceivedOrders?.map((order) => (
+        {unreceivedOrders.map((order) => (
           <NotifictionCard key={order?.id} order={order} />
         ))}
       </div>

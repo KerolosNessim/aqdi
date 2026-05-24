@@ -10,7 +10,7 @@ import AddNewEmployeeDialog from "./add-employee-dialog";
 import BlockEmployeeDialog from "./block-employee-dialog";
 import DeleteEmployeeDialog from "./delete-employee-dialog";
 
-export default function EmployeeDetailsCard({ employee }) {
+export default function EmployeeDetailsCard({ employee, readOnly = false }) {
   const formatDate = (dateString) => {
     if (!dateString) return "---";
     try {
@@ -37,9 +37,10 @@ export default function EmployeeDetailsCard({ employee }) {
           <div className="relative size-28 rounded-full overflow-hidden border border-gray-200">
             <Image
               src={employee?.profile_image || "/images/defaultUser.jpg"}
-              fill
+              width={112}
+              height={112}
               alt={employee?.name || "avatar"}
-              className="rounded-full object-cover"
+              className="size-full rounded-full object-cover"
             />
           </div>
 
@@ -63,11 +64,13 @@ export default function EmployeeDetailsCard({ employee }) {
         <div dir='rtl' className="col-span-2 bg-gray-100 rounded-2xl p-4 flex flex-col justify-between">
 
           {/* Top Actions */}
-          <div className="flex justify-end items-center gap-3">
-            <AddNewEmployeeDialog isEdit={true} employee={employee} />
-            <AddNoteDialog employee={employee} />
-            <AddSalaryDialog employee={employee} />
-          </div>
+          {!readOnly && (
+            <div className="flex justify-end items-center gap-3">
+              <AddNewEmployeeDialog isEdit={true} employee={employee} />
+              <AddNoteDialog employee={employee} />
+              <AddSalaryDialog employee={employee} />
+            </div>
+          )}
 
           {/* Middle Info */}
           <div className="flex items-center gap-8 mt-6">
@@ -124,11 +127,12 @@ export default function EmployeeDetailsCard({ employee }) {
           </div>
 
 
-          {/* Bottom Actions */}
-          <div className="flex gap-3 mt-4 justify-end ">
-            <BlockEmployeeDialog employee={employee} />
-            <DeleteEmployeeDialog isSingle={true} employee={employee} />
-          </div>
+          {!readOnly && (
+            <div className="flex gap-3 mt-4 justify-end ">
+              <BlockEmployeeDialog employee={employee} />
+              <DeleteEmployeeDialog isSingle={true} employee={employee} />
+            </div>
+          )}
         </div>
 
 

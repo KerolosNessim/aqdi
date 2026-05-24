@@ -46,6 +46,10 @@ export default function ReturnOrdersWrapper({ searchParams }) {
 
     const createdAtParam = resolvedParams?.created_at || null;
 
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearchQuery, createdAtParam]);
+
     const tableHeaders = [
         "رقــم الطلب",
         "العميل",
@@ -79,22 +83,8 @@ export default function ReturnOrdersWrapper({ searchParams }) {
     });
 
     const rawData = responseData?.data;
-    const items = rawData?.items || [];
+    const items = rawData?.items ?? [];
     const pagination = rawData?.pagination;
-
-    // Filter items based on local search query
-    const filteredItems = items.filter(row => {
-        if (!debouncedSearchQuery) return true;
-        const query = debouncedSearchQuery.toLowerCase();
-        return (
-            row.uuid?.toString().toLowerCase().includes(query) ||
-            row.user_mobile?.toString().toLowerCase().includes(query) ||
-            row.user_name?.toLowerCase().includes(query) ||
-            row.contract_type?.toLowerCase().includes(query) ||
-            row.employee_name?.toLowerCase().includes(query) ||
-            row.instrument_type?.toLowerCase().includes(query)
-        );
-    });
 
     // Formatting date
     const formatDate = (dateStr) => {
@@ -170,8 +160,8 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredItems && filteredItems.length > 0 ? (
-                            filteredItems.map((row) => (
+                        {items.length > 0 ? (
+                            items.map((row) => (
                                 <tr
                                     onClick={() => router.push(`/home/orders/${row.id}`)}
                                     key={row.id}

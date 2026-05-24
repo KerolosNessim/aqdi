@@ -31,6 +31,7 @@ export const useUserStore = create(
       logout: async () => {
         set({ user: null, token: null, isAuthenticated: false });
         localStorage.removeItem('token');
+        localStorage.removeItem('user-storage');
         await removeAuthCookie();
       },
     }),

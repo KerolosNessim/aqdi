@@ -14,7 +14,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import { useCallback, useState } from 'react';
 
-// ================= Font Size Extension =================
 const FontSize = Extension.create({
   name: 'fontSize',
 
@@ -59,36 +58,25 @@ const FontSize = Extension.create({
   },
 });
 
-// ================= Icons =================
-const Icon = ({ d, size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-
-const icons = {
-  bold: 'M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z',
-  italic: 'M19 4h-9M14 20H5M14.7 4.7L9.2 19.4',
-  underline: 'M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3M4 21h16',
-  ul: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
-  image: 'M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
-};
-
-// ================= Button =================
-const ToolbarButton = ({ onClick, isActive, children }) => (
+const ToolbarButton = ({ onClick, isActive, disabled, title, children }) => (
   <button
     type="button"
+    title={title}
+    disabled={disabled}
     onClick={onClick}
-    className={`p-2 rounded ${isActive ? 'bg-indigo-600 text-white' : 'hover:bg-gray-200'}`}
+    className={`min-w-[36px] h-9 px-2 rounded text-sm font-medium transition-colors ${
+      isActive ? 'bg-brand-main text-white' : 'hover:bg-gray-200 text-gray-700'
+    } ${disabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : ''}`}
   >
     {children}
   </button>
 );
 
-// ================= Toolbar =================
+const ToolbarDivider = () => <div className="w-px h-8 bg-gray-300 mx-1" />;
+
 function Toolbar({ editor }) {
   const [color, setColor] = useState('#000000');
+  const [highlightColor, setHighlightColor] = useState('#fef08a');
 
   const addImage = useCallback(() => {
     const input = document.createElement('input');
@@ -101,9 +89,7 @@ function Toolbar({ editor }) {
 
       const reader = new FileReader();
       reader.onload = () => {
-        editor.chain().focus().setImage({
-          src: reader.result,
-        }).run();
+        editor.chain().focus().setImage({ src: reader.result }).run();
       };
       reader.readAsDataURL(file);
     };
@@ -111,12 +97,70 @@ function Toolbar({ editor }) {
     input.click();
   }, [editor]);
 
+  const setLink = useCallback(() => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('أدخل الرابط:', previousUrl || 'https://');
+
+    if (url === null) return;
+
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 p-2 border-b bg-gray-50">
+    <div className="flex flex-wrap items-center gap-1 p-3 border-b bg-gray-50">
+      <ToolbarButton
+        title="تراجع"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().chain().focus().undo().run()}
+      >
+        ↶
+      </ToolbarButton>
+      <ToolbarButton
+        title="إعادة"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().chain().focus().redo().run()}
+      >
+        ↷
+      </ToolbarButton>
 
-      {/* Font Size */}
+      <ToolbarDivider />
+
+      <select
+        onChange={(e) => {
+          const value = e.target.value;
+          if (value === 'paragraph') {
+            editor.chain().focus().setParagraph().run();
+          } else {
+            editor.chain().focus().toggleHeading({ level: Number(value) }).run();
+          }
+        }}
+        value={
+          editor.isActive('heading', { level: 1 }) ? '1'
+          : editor.isActive('heading', { level: 2 }) ? '2'
+          : editor.isActive('heading', { level: 3 }) ? '3'
+          : editor.isActive('heading', { level: 4 }) ? '4'
+          : editor.isActive('heading', { level: 5 }) ? '5'
+          : editor.isActive('heading', { level: 6 }) ? '6'
+          : 'paragraph'
+        }
+        className="h-9 border rounded px-2 text-sm bg-white min-w-[120px]"
+      >
+        <option value="paragraph">فقرة</option>
+        <option value="1">عنوان 1</option>
+        <option value="2">عنوان 2</option>
+        <option value="3">عنوان 3</option>
+        <option value="4">عنوان 4</option>
+        <option value="5">عنوان 5</option>
+        <option value="6">عنوان 6</option>
+      </select>
+
       <select
         onChange={(e) => {
           const size = e.target.value;
@@ -126,70 +170,156 @@ function Toolbar({ editor }) {
             editor.chain().focus().setFontSize(size).run();
           }
         }}
-        className="border rounded px-2 py-1 text-sm"
+        className="h-9 border rounded px-2 text-sm bg-white min-w-[100px]"
       >
         <option value="default">حجم الخط</option>
-        <option value="12px">صغير</option>
-        <option value="16px">عادي</option>
-        <option value="20px">كبير</option>
-        <option value="24px">أكبر</option>
-        <option value="32px">ضخم</option>
+        <option value="12px">12px</option>
+        <option value="14px">14px</option>
+        <option value="16px">16px</option>
+        <option value="18px">18px</option>
+        <option value="20px">20px</option>
+        <option value="24px">24px</option>
+        <option value="28px">28px</option>
+        <option value="32px">32px</option>
       </select>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()}>
-        <Icon d={icons.bold} />
+      <ToolbarDivider />
+
+      <ToolbarButton title="عريض" isActive={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+        <strong>B</strong>
+      </ToolbarButton>
+      <ToolbarButton title="مائل" isActive={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <em>I</em>
+      </ToolbarButton>
+      <ToolbarButton title="تحته خط" isActive={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        <u>U</u>
+      </ToolbarButton>
+      <ToolbarButton title="يتوسطه خط" isActive={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>
+        <s>S</s>
+      </ToolbarButton>
+      <ToolbarButton title="كود" isActive={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
+        {'</>'}
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()}>
-        <Icon d={icons.italic} />
+      <ToolbarDivider />
+
+      <ToolbarButton title="محاذاة لليمين" isActive={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()}>
+        ≡R
+      </ToolbarButton>
+      <ToolbarButton title="محاذاة للوسط" isActive={editor.isActive({ textAlign: 'center' })} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+        ≡C
+      </ToolbarButton>
+      <ToolbarButton title="محاذاة لليسار" isActive={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+        ≡L
+      </ToolbarButton>
+      <ToolbarButton title="ضبط" isActive={editor.isActive({ textAlign: 'justify' })} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+        ≡J
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()}>
-        <Icon d={icons.underline} />
+      <ToolbarDivider />
+
+      <ToolbarButton title="قائمة نقطية" isActive={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        •≡
+      </ToolbarButton>
+      <ToolbarButton title="قائمة مرقمة" isActive={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        1≡
+      </ToolbarButton>
+      <ToolbarButton title="اقتباس" isActive={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+        "
+      </ToolbarButton>
+      <ToolbarButton title="كتلة كود" isActive={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+        {'{ }'}
+      </ToolbarButton>
+      <ToolbarButton title="خط فاصل" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+        ―
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()}>
-        <Icon d={icons.ul} />
+      <ToolbarDivider />
+
+      <ToolbarButton title="رابط" isActive={editor.isActive('link')} onClick={setLink}>
+        🔗
+      </ToolbarButton>
+      <ToolbarButton
+        title="إزالة الرابط"
+        disabled={!editor.isActive('link')}
+        onClick={() => editor.chain().focus().unsetLink().run()}
+      >
+        ⛓️✕
+      </ToolbarButton>
+      <ToolbarButton title="صورة" onClick={addImage}>
+        🖼️
       </ToolbarButton>
 
-      <ToolbarButton onClick={addImage}>
-        <Icon d={icons.image} />
-      </ToolbarButton>
+      <ToolbarDivider />
 
-      {/* Color */}
+      <ToolbarButton
+        title="تمييز"
+        isActive={editor.isActive('highlight')}
+        onClick={() => editor.chain().focus().toggleHighlight({ color: highlightColor }).run()}
+      >
+        🖍️
+      </ToolbarButton>
       <input
         type="color"
+        title="لون التمييز"
+        value={highlightColor}
+        onChange={(e) => {
+          setHighlightColor(e.target.value);
+          if (editor.isActive('highlight')) {
+            editor.chain().focus().toggleHighlight({ color: e.target.value }).run();
+          }
+        }}
+        className="w-9 h-9 rounded border cursor-pointer bg-white"
+      />
+
+      <input
+        type="color"
+        title="لون النص"
         value={color}
         onChange={(e) => {
           setColor(e.target.value);
           editor.chain().focus().setColor(e.target.value).run();
         }}
+        className="w-9 h-9 rounded border cursor-pointer bg-white"
       />
 
+      <ToolbarButton
+        title="إزالة التنسيق"
+        onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+      >
+        ✕
+      </ToolbarButton>
     </div>
   );
 }
 
-// ================= Main Component =================
 export default function TextEditor({
   initialContent = '',
   onChange,
+  dir = 'rtl',
+  placeholder = 'اكتب هنا...',
 }) {
-
   const editor = useEditor({
     immediatelyRender: false,
 
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4, 5, 6] },
+      }),
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Highlight,
+      Highlight.configure({ multicolor: true }),
       TextStyle,
       Color,
-      FontSize, // 👈 مهم
+      FontSize,
       Image,
-      Link,
-      Placeholder.configure({ placeholder: 'اكتب هنا...' }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-brand-main underline',
+        },
+      }),
+      Placeholder.configure({ placeholder }),
       CharacterCount,
     ],
 
@@ -197,15 +327,15 @@ export default function TextEditor({
 
     editorProps: {
       attributes: {
-        dir: 'rtl',
-        class: 'min-h-[300px] p-4 outline-none',
+        dir,
+        class: 'min-h-[300px] p-4 outline-none prose prose-sm max-w-none',
       },
     },
 
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor: currentEditor }) => {
       onChange?.({
-        html: editor.getHTML(),
-        text: editor.getText(),
+        html: currentEditor.getHTML(),
+        text: currentEditor.getText(),
       });
     },
   });
@@ -214,11 +344,11 @@ export default function TextEditor({
 
   return (
     <div className="border rounded-lg overflow-hidden bg-white">
-
       <Toolbar editor={editor} />
-
       <EditorContent editor={editor} />
-
+      <div className="border-t px-4 py-2 text-xs text-gray-400 text-left" dir="ltr">
+        {editor.storage.characterCount.characters()} characters
+      </div>
     </div>
   );
 }

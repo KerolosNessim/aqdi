@@ -6,12 +6,14 @@ import SalaryTable from '@/components/employees/salary-table';
 import NotesTable from '@/components/employees/notes-table';
 import ContractEmployeeTable from '@/components/employees/contract-employee-table';
 import Loader from '@/components/home/loader';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { axiosInstance } from '@/src/utils/axios';
 import { useQuery } from '@tanstack/react-query';
 
 export default function EmployeeDetailsPage() {
   const { id } = useParams()
+  const searchParams = useSearchParams()
+  const isProfileView = searchParams.get('view') === 'profile'
 
   function getEmployeeById(id) {
     return axiosInstance.get(`/admin/employees/${id}`)
@@ -29,25 +31,31 @@ export default function EmployeeDetailsPage() {
 
   const employee = data?.data || data;
 
-  console.log("Employee Data:", employee);
-
   if (isLoading) {
     return <Loader />;
   }
 
   return (
     <div>
-      {/* app header */}
-      <Header page='welcome' title="الموظفين" isMain={false} first="الرئيــسية" firstURL="/" second='الموظفين' secondURL="/home/employees" third='تفاصيل الموظف' thirdURL={`/home/employees/${id}`} />
-      {/* employee details card */}
-      <EmployeeDetailsCard employee={employee} />
-      {/* salary table */}
-      <SalaryTable salaries={employee?.salaries} />
-      {/* notes table */}
-      <NotesTable notes={employee?.notes} />
-      {/* contract employee table */}
-      <ContractEmployeeTable receivedContracts={employee?.received_contracts} refundableContracts={employee?.refundable_contracts} />
-
+      <Header
+        page='welcome'
+        title={isProfileView ? "الملف الشخصي" : "الموظفين"}
+        isMain={false}
+        first="الرئيــسية"
+        firstURL="/"
+        second={isProfileView ? "الملف الشخصي" : 'الموظفين'}
+        secondURL={isProfileView ? `/home/employees/${id}?view=profile` : "/home/employees"}
+        third={isProfileView ? undefined : 'تفاصيل الموظف'}
+        thirdURL={isProfileView ? undefined : `/home/employees/${id}`}
+      />
+      <EmployeeDetailsCard employee={employee} readOnly={isProfileView} />
+      {!isProfileView && (
+        <>
+          <SalaryTable salaries={employee?.salaries} />
+          <NotesTable notes={employee?.notes} />
+          <ContractEmployeeTable receivedContracts={employee?.received_contracts} refundableContracts={employee?.refundable_contracts} />
+        </>
+      )}
     </div>
   )
 }

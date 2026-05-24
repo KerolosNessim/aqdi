@@ -16,6 +16,7 @@ import { axiosInstance } from '@/src/utils/axios';
 import { useUserStore } from '@/src/stores/user-store';
 import { useRouter } from 'next/navigation';
 import { setAuthCookie } from '@/src/app/actions/auth';
+import { enrichUserWithRolePermissions } from '@/src/lib/permissions';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -46,11 +47,14 @@ export default function LoginPage() {
       return res.data
     },
     onSuccess: async (response) => {
-      console.log(response);
       if (response?.success && response?.data?.token) {
+        const userWithPermissions = await enrichUserWithRolePermissions(
+          response.data,
+          (roleId) => axiosInstance.get(`/admin/roles/${roleId}`).then((res) => res?.data)
+        );
         toast.success(response?.message);
-        setAuth(response?.data, response?.data?.token);
-        await setAuthCookie(response?.data?.token);
+        setAuth(userWithPermissions, userWithPermissions?.token);
+        await setAuthCookie(userWithPermissions?.token);
         router.push('/home');
       }
     },

@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function AnalsCard({ item }) {
     return (
-        <div className="flex flex-col gap-4 p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] max-[1700px]:p-[15px_20px]">
+        <div className="flex flex-col gap-4 p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] min-w-0 w-full max-[1700px]:p-[15px_20px]">
             <div className="flex items-center justify-between w-full">
                 <div className="flex flex-col gap-1.5">
                     <span className="text-black text-[18px] font-semibold">{item.value}</span>

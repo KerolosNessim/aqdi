@@ -16,7 +16,7 @@ export default function AddCompleteOrder() {
   return (
     <Dialog open={open} onOpenChange={setOpen} >
       <DialogTrigger asChild>
-        <Button className='bg-brand-hover hover:bg-brand-hover/80' >
+        <Button className="bg-brand-hover hover:bg-brand-hover/80 h-12 rounded-full font-bold px-6 whitespace-nowrap">
           + إضافة عقــد واتســـاب مكتمـل
         </Button>
       </DialogTrigger>

@@ -65,6 +65,7 @@ export default function UnitsAnalysisWrapper({ id }) {
         queryKey: ['unitsAnalysis', id, currentPage],
         queryFn: () => getUnits(currentPage),
     });
+    
 
     const rawData = responseData?.data;
     const isPaginated = rawData && !Array.isArray(rawData) && Array.isArray(rawData.items);

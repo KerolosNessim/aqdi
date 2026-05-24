@@ -1,7 +1,6 @@
 
 import { useUserStore } from "../stores/user-store";
 import { useRouter } from "next/navigation";
-import { removeAuthCookie } from "../app/actions/auth";
 import { axiosInstance } from "@/src/utils/axios";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -23,8 +22,10 @@ export const useLogout = () => {
       router.push("/login");
     },
     onError: async (error) => {
+      await clearStore();
       toast.dismiss();
       toast.error(error.response?.data?.message || "حدث خطأ أثناء تسجيل الخروج");
+      router.push("/login");
     },
   });
 

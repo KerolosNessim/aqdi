@@ -1,26 +1,34 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import greenRial from '@/public/images/greenRial.svg'
+import React, { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import waIcon from '@/public/images/waIcon.svg'
 import Link from 'next/link'
 import Header from '../home/Header'
 import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { axiosInstance } from '@/src/utils/axios'
 import { useQuery } from '@tanstack/react-query'
 import Loader from '../home/loader'
-import { Button } from '../ui/button'
-import AddCompleteOrder from './add-complete-order'
-import AddInCompleteOrder from './add-incompleted-order'
-import { useSearchParams } from 'next/navigation'
-import { useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import OrdersToolbar from './shared/orders-toolbar'
+import OrdersStatusCards from './shared/orders-status-cards'
+import OrdersTable from './shared/orders-table'
+import OrdersPagination from './shared/orders-pagination'
+import {
+    applyAdvancedFilters,
+    emptyAdvancedFilters,
+} from './shared/orders-filter-utils'
+import { useOrderStatusCounts } from './shared/use-order-status-counts'
 
 export default function CompletedOrdersWrapper() {
     const router = useRouter()
+    const pathname = usePathname()
     const [activeFilter, setActiveFilter] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [showMoreFilters, setShowMoreFilters] = useState(false);
+    const [advancedFilters, setAdvancedFilters] = useState(emptyAdvancedFilters);
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -28,6 +36,7 @@ export default function CompletedOrdersWrapper() {
         }, 500);
         return () => clearTimeout(handler);
     }, [searchQuery]);
+
     const [refundModalStep, setRefundModalStep] = useState(0); // 0: closed, 1: form, 2: submitted, 3: success
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [refundDraftNumber, setRefundDraftNumber] = useState('');
@@ -93,10 +102,36 @@ export default function CompletedOrdersWrapper() {
     const searchParams = useSearchParams();
     const createdAtParam = searchParams ? searchParams.get('created_at') : null;
 
+    const createdAtQuery = createdAtParam
+        ? `created_at=${createdAtParam === 'total' ? 'all' : createdAtParam}`
+        : '';
+
+    const { allTotal, byId: countsById } = useOrderStatusCounts(statusItems, {
+        baseUrl: '/admin/orders/complete/list',
+        statusParam: 'contract_status_id',
+        extraParams: createdAtQuery,
+    });
+
+    const handleResetAll = () => {
+        setSearchQuery('');
+        setDebouncedSearchQuery('');
+        setActiveFilter('');
+        setAdvancedFilters(emptyAdvancedFilters);
+        setShowMoreFilters(false);
+        setCurrentPage(1);
+        if (createdAtParam) {
+            router.replace(pathname);
+        }
+    };
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeFilter, debouncedSearchQuery, createdAtParam]);
+
     /*-------------------------------------------------------------------------------------*/
     // get completed orders
     function getCompletedOrders() {
-        let url = `/admin/orders/complete/list?status=${activeFilter}`;
+        let url = `/admin/orders/complete/list?contract_status_id=${activeFilter}&page=${currentPage}`;
         if (createdAtParam) {
             const createAt = createdAtParam === 'total' ? 'all' : createdAtParam;
             url += `&created_at=${createAt}`;
@@ -107,168 +142,58 @@ export default function CompletedOrdersWrapper() {
         return axiosInstance(url);
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["completedOrders", activeFilter, createdAtParam, debouncedSearchQuery],
+        queryKey: ["completedOrders", activeFilter, createdAtParam, debouncedSearchQuery, currentPage],
         queryFn: getCompletedOrders
     })
-    const orders = data?.data?.data ?? []
+    const orders = data?.data?.data?.items ?? []
+    const pagination = data?.data?.data?.pagination
+
+    const filteredOrders = useMemo(
+        () => applyAdvancedFilters(orders, advancedFilters, { showStatusColumn: false }),
+        [orders, advancedFilters]
+    )
+
     /*-------------------------------------------------------------------------------------*/
     // loader
-    if (isLoading) return <Loader />
+    if (isLoading || statusLoading) return <Loader />
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={"الطلبات المكتملة"} isMain={false} first="الرئيــسية" firstURL="/" second="الطلبات المكتملة" secondURL="/home/completed-orders" />
-            {/* search */}
-            <div className="flex flex-col gap-6  mt-4  relative z-10">
-                {/* add orders */}
-                <div className="space-y-4 w-full">
-                    <div className="flex items-center gap-3">
-                        {/* add orders */}
-                        <AddCompleteOrder />
-                        <AddInCompleteOrder />
-                        {/* search */}
-                        <div className="relative grow">
-                            <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3]" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
-                                <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="البحث الذكي ...!"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
-                            />
-                        </div>
+            <Header page='welcome' title={"طلب مكتمل"} isMain={false} first="الرئيــسية" firstURL="/" second="طلب مكتمل" secondURL="/home/completed-orders" />
 
-                    </div>
-                    {/* filters */}
-                    {/* <div className='flex items-center gap-4 '>
-                        <div className="flex items-center gap-4 flex-1 justify-between min-w-[300px]">
-                            <div className="flex  items-center gap-3 bg-[#F9F9F9] p-1.5 rounded-full border border-[#EEEEEE]">
-                                <Link href={"/home/orders-analysis/verified"} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-[#eee] hover:shadow-sm transition-all text-[13px] font-bold text-black">
-                                    <span>✅</span>
-                                    <span>تم التوثيق</span>
-                                    <span className="bg-[#E6FFE6] text-[#10B981] px-2 py-0.5 rounded-full text-[11px]">47</span>
-                                </Link>
-
-                                <Link href={"/home/orders-analysis/whatsapp_completed_orders"} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-[#eee] hover:shadow-sm transition-all text-[13px] font-bold text-black">
-                                    <span>📋</span>
-                                    <span>طلب واتساب مكتمل</span>
-                                    <span className="bg-[#FFF3E0] text-[#F97316] px-2 py-0.5 rounded-full text-[11px]">04</span>
-                                </Link>
-
-                                <Link href={"/home/orders-analysis/refunded_orders"} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-[#eee] hover:shadow-sm transition-all text-[13px] font-bold text-black">
-                                    <span>😊</span>
-                                    <span>مستردة</span>
-                                    <span className="bg-[#FEF9C3] text-[#EAB308] px-2 py-0.5 rounded-full text-[11px]">02</span>
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button className="w-[46px] h-[46px] flex items-center justify-center rounded-full border border-[#EEEEEE] bg-[#F9F9F9] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all shadow-sm">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                    <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </button>
-                            <button className="h-[46px] px-6 rounded-full border border-[#EEEEEE] bg-white text-[#4D4D4D] font-bold text-[14px] hover:bg-[#fafafa] transition-all shadow-sm flex items-center gap-2">
-                                فتـرة أخـــر
-                                <i className="fa-solid fa-chevron-down text-[10px] text-[#A3A3A3] mt-0.5"></i>
-                            </button>
-                        </div>
-                    </div> */}
-                </div>
-            </div>
-            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
-                <table className="w-full border-collapse">
-                    <thead className="bg-[#FAFAFA]">
-                        <tr>
-                            {tableHeaders.map((header, index) => (
-                                <th key={index} className="text-right p-[15px_20px] text-[#A3A3A3] text-[13px] font-medium border-b border-[#E4E4E4] whitespace-nowrap">
-                                    {header}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {orders?.map((row) => (
-                            <tr key={row.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
-                                <td className="p-[15px_20px]">
-                                    <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-[#f9f9f9] rounded-lg w-fit mx-auto border border-[#eee]">
-                                        <span className="text-black text-[12px] font-bold">{row?.uuid}</span>
-                                        <button onClick={() => {
-                                            navigator.clipboard.writeText(row?.uuid)
-                                            toast.success('تم نسخ رقم الطلب')
-                                        }} className="text-[#A3A3A3] hover:text-brand-main">
-                                            <i className="fa-regular fa-copy text-[11px]"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-black text-[13px]">{row?.user_mobile}</span>
-                                        <button onClick={() => {
-                                            navigator.clipboard.writeText(row?.user_mobile)
-                                            toast.success('تم نسخ رقم الجوال')
-                                        }} className="text-[#A3A3A3] hover:text-brand-main">
-                                            <i className="fa-regular fa-copy text-[11px]"></i>
-                                        </button>
-                                        <Link href={`https://wa.me/${row?.user_mobile}`} target="_blank" className="hover:scale-110 transition-all">
-                                            <Image src={waIcon} alt="wa" width={16} height={16} />
-                                        </Link>
-                                    </div>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : row.contractType === 'تجــاري' ? 'bg-[#FFE6F0] text-[#EC4899]' : 'bg-[#E6F0FF] text-[#3B82F6]'}`}>
-                                        {row?.contract_type}
-                                    </span>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
-                                        {row?.instrument_type ?? "---"}
-                                    </span>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <div className="flex items-center gap-1.5 text-[#007C13] font-bold text-[13px]">
-                                        <span>{row?.amount_payment}</span>
-                                        <Image src={greenRial} alt="rial" width={14} height={14} />
-                                        <i className="fa-solid fa-circle-check text-[12px]"></i>
-                                    </div>
-                                </td>
-                                <td className="p-[15px_20px] text-[13px] text-[#A3A3A3] whitespace-nowrap">{new Date(row?.updated_at).toLocaleDateString('ar-EG')}</td>
-                                {/* <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ backgroundColor: row?.status?.color || "#FFFBE6" }}>
-                                        {row?.status?.name ? row?.status?.name : "قيد المعالجه"}
-                                    </span>
-                                </td> */}
-                                <td className="p-[15px_20px]">
-                                    <span className="text-[13px] text-[#4D4D4D] font-medium">{row?.employee_name}</span>
-                                </td>
-                                <td className="p-[15px_20px]">
-                                    <div className='flex items-center gap-2'>
-                                        <button onClick={() => { router.push(`/home/orders/${row.id}`) }} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all">
-                                            👁️
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div className="flex flex-col gap-6 mt-4 relative z-10">
+                <OrdersToolbar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    showAddButtons
+                    queryKeys={["completedOrders"]}
+                    showMoreFilters={showMoreFilters}
+                    onToggleMoreFilters={() => setShowMoreFilters((prev) => !prev)}
+                    advancedFilters={advancedFilters}
+                    onAdvancedFiltersChange={setAdvancedFilters}
+                    onResetAll={handleResetAll}
+                    showStatusField={false}
+                />
+                <OrdersStatusCards
+                    statusItems={statusItems}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                    allTotal={allTotal}
+                    countsById={countsById}
+                />
             </div>
 
-            {/* <div className="flex items-center justify-center gap-2.5 mt-4">
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-right text-[12px]"></i>
-                </button>
-                <button className="w-9 h-9 rounded-full bg-brand-main text-white flex items-center justify-center text-[13px] font-medium shadow-lg shadow-brand-main/20">1</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">2</button>
-                <span className="text-[#A3A3A3]">...</span>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">40</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-left text-[12px]"></i>
-                </button>
-            </div> */}
+            <OrdersTable
+                orders={filteredOrders}
+                showStatusColumn={false}
+                showChangeStatus={false}
+                onRowClick={(row) => router.push(`/home/orders/${row.id}`)}
+            />
+
+            <OrdersPagination
+                pagination={pagination}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Refund Modal Step 1: Form */}
             <Dialog open={refundModalStep === 1} onOpenChange={(open) => !open && setRefundModalStep(0)}>

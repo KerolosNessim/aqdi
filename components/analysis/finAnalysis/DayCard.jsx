@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function DayCard({ item }) {
 
     return (
-        <div className="flex justify-between items-center p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] max-[1700px]:p-[15px_20px]">
+        <div className="flex justify-between items-center gap-3 p-[20px_25px] bg-white rounded-[24px] border border-[#E4E4E4] min-w-0 w-full max-[1700px]:p-[15px_20px]">
             <div className="flex flex-col gap-3.5">
                 <div className="flex items-center gap-2.5">
                     <span className="text-[#A3A3A3] text-[12px] font-normal">{item.name}</span>
@@ -29,9 +29,11 @@ export default function DayCard({ item }) {
                 <div className="w-[30px] h-[30px] rounded-full bg-[#FAFAFA] flex items-center justify-center">
                     <Image src={dollarIcon} alt="Aakdi" width={16} height={16} />
                 </div>
-                <Link href={item.link} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white">
-                    عــرض
-                </Link>
+                {item.link ? (
+                    <Link href={item.link} className="bg-[#FAFAFA] rounded-[24px] text-[#A3A3A3] text-[12px] font-medium p-[8px_18px] transition-all hover:bg-brand-main hover:text-white whitespace-nowrap">
+                        عــرض
+                    </Link>
+                ) : null}
             </div>
         </div>
     );

@@ -4,6 +4,8 @@ import { Switch } from "@/components/ui/switch";
 import { Info } from "lucide-react";
 import Header from "@/components/home/Header";
 import Link from "next/link";
+import PermissionGate from "@/components/auth/PermissionGate";
+import { PERMISSION_SECTIONS } from "@/src/lib/permissions";
 
 export default function SettingsWrapper() {
     const [websiteSettings, setWebsiteSettings] = useState({
@@ -36,12 +38,15 @@ export default function SettingsWrapper() {
         { label: "رســائل توضيحية للموظفيــن", link: "/home/settings/message-for-employee" },
         { label: "رسائل توضيحية للعقار", link: "/home/settings/message-for-property" },
         { label: "الخصومات", link: "/home/settings/coupons" },
-        { label: "السياسة الخاصة", link: "/home/settings/terms" },
+        { label: "المدونة", link: "/home/settings/blogs" },
+        { label: "الأسئلة الشائعة", link: "/home/settings/faqs" },
+        { label: "قسم التعليمات", link: "/home/settings/instructions" },
+        { label: "الشروط والاحكام", link: "/home/settings/terms" },
+        { label: "سياسة الخصوصية", link: "/home/settings/privacy" },
         { label: "الإشعارات", link: "#" },
-        { label: "المدفوعات", link: "#" },
+        { label: "المدفوعات", link: "/home/settings/payments" },
         { label: "حدود الطلبات أو إضافية", link: "#" },
         { label: "رسائل التطبيقية للعميل", link: "#" },
-        { label: "سياسة الخصوصية", link: "#" },
         { label: "طرق الدفع", link: "#" },
     ];
 
@@ -102,19 +107,24 @@ export default function SettingsWrapper() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
                     {systemSettings.map((setting, index) => (
-                        <Link 
-                            key={index}
-                            href={setting?.link}
-                            className="bg-white rounded-[16px] border border-[#E4E4E4] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-brand-main hover:bg-[#fafafa] transition-all group"
+                        <PermissionGate
+                            key={setting.label}
+                            section={PERMISSION_SECTIONS.settings}
+                            action="view"
                         >
-                            <div className="w-8 h-8 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#A3A3A3] group-hover:bg-brand-main group-hover:text-white transition-all">
-                                <Info size={16} />
-                            </div>
-                            <span className="text-[13px] text-[#212121] font-medium flex-1 text-center">{setting.label}</span>
-                            <div className="w-8 flex justify-end opacity-0 group-hover:opacity-100 transition-all">
-                                <i className="fa-solid fa-chevron-left text-[10px] text-brand-main"></i>
-                            </div>
-                        </Link>
+                            <Link
+                                href={setting?.link}
+                                className="bg-white rounded-[16px] border border-[#E4E4E4] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-brand-main hover:bg-[#fafafa] transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#A3A3A3] group-hover:bg-brand-main group-hover:text-white transition-all">
+                                    <Info size={16} />
+                                </div>
+                                <span className="text-[13px] text-[#212121] font-medium flex-1 text-center">{setting.label}</span>
+                                <div className="w-8 flex justify-end opacity-0 group-hover:opacity-100 transition-all">
+                                    <i className="fa-solid fa-chevron-left text-[10px] text-brand-main"></i>
+                                </div>
+                            </Link>
+                        </PermissionGate>
                     ))}
                 </div>
             </div>

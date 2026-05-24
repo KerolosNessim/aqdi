@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { useQuery } from '@tanstack/react-query'
 import { axiosInstance } from '@/src/utils/axios'
 import Loader from '@/components/home/loader'
-import { Copy } from 'lucide-react'
+import { Copy, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function InCompletedWhatsappWrapper() {
@@ -20,14 +20,17 @@ export default function InCompletedWhatsappWrapper() {
   const [refundModalStep, setRefundModalStep] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+  const filterOrders = (rows, query) => {
+    if (!query.trim()) return rows;
+    const normalizedQuery = query.toLowerCase().trim();
+    return rows.filter((row) =>
+      Object.values(row).some((value) =>
+        value != null && String(value).toLowerCase().includes(normalizedQuery)
+      )
+    );
+  };
   // useEffect(() => {
   //     switch (id) {
   //         case 'day':
@@ -242,20 +245,19 @@ export default function InCompletedWhatsappWrapper() {
   };
 
   function getWhatsOrder() {
-    let url = `/admin/contract-whatsapp?is_complete=0`;
-    if (debouncedSearchQuery) {
-      url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
-    }
-    return axiosInstance(url)
+    return axiosInstance(`/admin/contract-whatsapp?is_complete=0&page=${currentPage}`)
   }
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['orders-whatsapp-incompleted', debouncedSearchQuery],
+    queryKey: ['orders-whatsapp-incompleted', currentPage],
     queryFn: () => getWhatsOrder(),
   })
 
-  const orders = data?.data?.data?.data ?? [];
-  console.log(orders)
+  const paginatedData = data?.data?.data;
+  const orders = paginatedData?.data ?? [];
+  const filteredOrders = filterOrders(orders, searchQuery);
+  const pagination = paginatedData;
+  const showPagination = pagination && pagination.last_page > 1 && !searchQuery.trim();
 
 
 
@@ -296,7 +298,8 @@ export default function InCompletedWhatsappWrapper() {
             </tr>
           </thead>
           <tbody>
-            {orders?.map((row) => (
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((row) => (
               <tr key={row.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
                 <td className="p-[15px_20px]">
                   <div className="flex items-center gap-2">
@@ -321,23 +324,81 @@ export default function InCompletedWhatsappWrapper() {
                                     </button>
                 </td>
               </tr>
-            ))}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={tableHeaders.length} className="text-center p-8 text-[#A3A3A3] text-sm">
+                  لا توجد نتائج مطابقة للبحث.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* <div className="flex items-center justify-center gap-2.5 mt-4">
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-right text-[12px]"></i>
+      {showPagination && (
+        <div className="flex items-center justify-center gap-2.5 mt-4" dir="rtl">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+
+          {(() => {
+            const pages = [];
+            const { last_page } = pagination;
+            const range = 1;
+            const start = Math.max(1, currentPage - range);
+            const end = Math.min(last_page, currentPage + range);
+
+            if (start > 1) {
+              pages.push(1);
+              if (start > 2) pages.push('...');
+            }
+
+            for (let i = start; i <= end; i++) {
+              pages.push(i);
+            }
+
+            if (end < last_page) {
+              if (end < last_page - 1) pages.push('...');
+              pages.push(last_page);
+            }
+
+            return pages.map((page, idx) => {
+              if (page === '...') {
+                return (
+                  <span key={`dots-${idx}`} className="text-[#A3A3A3] px-1">
+                    ...
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium transition-all ${currentPage === page
+                    ? "bg-brand-main text-white shadow-lg shadow-brand-main/20"
+                    : "border border-[#E4E4E4] text-[#A3A3A3] hover:bg-[#f5f5f5]"
+                    }`}
+                >
+                  {page}
                 </button>
-                <button className="w-9 h-9 rounded-full bg-brand-main text-white flex items-center justify-center text-[13px] font-medium shadow-lg shadow-brand-main/20">1</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">2</button>
-                <span className="text-[#A3A3A3]">...</span>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">40</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-left text-[12px]"></i>
-                </button>
-            </div> */}
+              );
+            });
+          })()}
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(pagination.last_page, prev + 1))}
+            disabled={currentPage === pagination.last_page}
+            className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

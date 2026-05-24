@@ -53,7 +53,13 @@ export default function HomeWelcomeWrapper() {
                 <p>الإتقان ليس في كثرة العمل، بل في صدق النية وجودة الأداء. من يعمل بضمير يترك أثراً لا يُمحى، قال تعالى: ﴿لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا﴾ ‏. ‏العبرة، بمعيار الجودة ‏والإحسان، ﻻبالكثرة والقلة !</p>
                 <div className="w-full max-w-[575px] rounded-[40px] bg-[#FBFBFB] border border-black/10 p-10 relative mx-auto mb-[50px] flex flex-col items-center justify-center">
                     <Image src={logo} alt="Aakdi" className="mb-4 w-9 h-auto object-contain" />
-                    <Image src={user?.profile_image||defaultUser} alt="Aakdi" className="w-[112px] h-[112px] object-cover rounded-full overflow-hidden mx-auto mb-[15px]" />
+                    <Image
+                        src={user?.profile_image || defaultUser}
+                        alt="Aakdi"
+                        width={112}
+                        height={112}
+                        className="w-[112px] h-[112px] object-cover rounded-full overflow-hidden mx-auto mb-[15px]"
+                    />
                     <h3 className="text-[14px] font-bold text-black mb-[6px] text-center">{user?.name}</h3>
                     <h4 className="text-[14px] font-normal text-[#4D4D4D] mb-[35px] text-center">{user?.role_relation?.name}</h4>
                     <div className="flex flex-col items-center justify-items-center gap-[15px] mb-[35px]">

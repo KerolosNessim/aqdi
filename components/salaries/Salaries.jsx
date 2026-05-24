@@ -96,8 +96,9 @@ export default function Salaries() {
                                                         <Image
                                                             src={employee.profile_image}
                                                             alt={employee.name}
-                                                            fill
-                                                            className="object-cover"
+                                                            width={32}
+                                                            height={32}
+                                                            className="size-full object-cover"
                                                         />
                                                     </div>
                                                 ) : (
