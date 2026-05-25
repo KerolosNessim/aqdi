@@ -114,7 +114,7 @@ export default function OrdersTable({
                 </td>
                 <td className="p-[15px_20px]">
                   <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${
+                    className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${
                       row?.contract_type_key === "housing" || row?.contract_type === "سكني"
                         ? "bg-[#E6F0FF] text-[#3B82F6]"
                         : "bg-[#F0E6FF] text-[#7C3AED]"
@@ -124,7 +124,7 @@ export default function OrdersTable({
                   </span>
                 </td>
                 <td className="p-[15px_20px]">
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#F0E6FF] text-[#7C3AED]">
+                  <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F0E6FF] text-[#7C3AED]">
                     {row?.instrument_type ?? "---"}
                   </span>
                 </td>
@@ -141,7 +141,7 @@ export default function OrdersTable({
                 {showStatusColumn && (
                   <td className="p-[15px_20px]">
                     <span
-                      className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap text-[#212121]"
+                      className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap text-[#212121]"
                       style={{ backgroundColor: row?.status?.color || "#E6FFE6" }}
                     >
                       {row?.status?.name || "قيد المعالجة"}

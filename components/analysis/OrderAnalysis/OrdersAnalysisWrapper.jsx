@@ -326,7 +326,7 @@ export default function OrdersAnalysisWrapper({ id }) {
                                     </div>
                                 </td>
                                 <td className="p-[15px_20px]">
-                                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
+                                    <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
                                         {row.contract_type}
                                     </span>
                                 </td>

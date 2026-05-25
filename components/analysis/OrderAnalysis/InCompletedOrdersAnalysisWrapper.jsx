@@ -315,12 +315,12 @@ export default function OrdersAnalysisWrapper({ id }) {
                                     </div>
                                 </td>
                                 <td className="p-[15px_20px]">
-                                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : row.contractType === 'تجــاري' ? 'bg-[#FFE6F0] text-[#EC4899]' : 'bg-[#E6F0FF] text-[#3B82F6]'}`}>
+                                    <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : row.contractType === 'تجــاري' ? 'bg-[#FFE6F0] text-[#EC4899]' : 'bg-[#E6F0FF] text-[#3B82F6]'}`}>
                                         {row?.contract_type}
                                     </span>
                                 </td>
                                 <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
+                                    <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
                                         {row?.instrument_type ?? "---"}
                                     </span>
                                 </td>
@@ -333,7 +333,7 @@ export default function OrdersAnalysisWrapper({ id }) {
                                 </td>
                                 <td className="p-[15px_20px] text-[13px] text-[#A3A3A3] whitespace-nowrap">{new Date(row?.updated_at).toLocaleDateString('ar-EG')}</td>
                                 <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ backgroundColor: row?.status?.color || "#FFFBE6" }}>
+                                    <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap" style={{ backgroundColor: row?.status?.color || "#FFFBE6" }}>
                                         {row?.status?.name ? row?.status?.name : "قيد المعالجه"}
                                     </span>
                                 </td>

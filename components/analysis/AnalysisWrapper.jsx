@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React from "react";
 import Header from "../home/Header";
 import DayCard from "./finAnalysis/DayCard";
@@ -10,6 +10,7 @@ import LocationsCard from "./finAnalysis/LocationsCard";
 import LayeringCard from "./finAnalysis/LayeringCard";
 import AnalsCard from "./finAnalysis/AnalsCard";
 import Loader from "../home/loader";
+import AnalysisSection, { CardGrid, GRID_2, GRID_3, GRID_4, GRID_5 } from "./AnalysisSection";
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "@/src/utils/axios";
 import {
@@ -18,9 +19,12 @@ import {
     formatPercentage,
     normalizeDashboardAnalytics,
 } from "@/src/lib/dashboard-analytics";
+import { parseNamesList } from "./finAnalysis/static-analysis-avatars";
 
-const CARD_GRID =
-    "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 w-full min-w-0 mb-3";
+function mapPersonNames(rawValue, formattedValue) {
+    if (Array.isArray(rawValue)) return rawValue.filter(Boolean).map(String);
+    return parseNamesList(formattedValue);
+}
 
 const getControlPanelLink = (label) => {
     if (!label) return null;
@@ -53,20 +57,6 @@ const getOrderAnalyticsLink = (label) => {
     return null;
 };
 
-function SectionBlock({ title, children }) {
-    return (
-        <section className="min-w-0 w-full">
-            <h2 className="text-[18px] font-bold text-black mb-[18px]">{title}</h2>
-            {children}
-        </section>
-    );
-}
-
-function CardGrid({ children, columns = CARD_GRID }) {
-    if (!children || (Array.isArray(children) && children.length === 0)) return null;
-    return <div className={columns}>{children}</div>;
-}
-
 export default function Statistics() {
     const { data: statisticsData, isError, isLoading } = useQuery({
         queryKey: ["getAnalysis"],
@@ -93,176 +83,214 @@ export default function Statistics() {
         );
     }
 
-    const analysisData = {
-        title: "لوحة التحكم :",
-        incomes: apiData.control_panel.map((item) => ({
-            name: item.label_ar ?? item.label ?? "",
-            value: formatMetricValue(item),
-            valueType: item.type === "currency" ? "price" : "count",
-            link: getControlPanelLink(item.label_ar),
-        })),
-    };
+    const controlPanel = apiData.control_panel.map((item) => ({
+        name: item.label_ar ?? item.label ?? "",
+        value: formatMetricValue(item),
+        valueType: item.type === "currency" ? "price" : "count",
+        link: getControlPanelLink(item.label_ar),
+    }));
 
     const financial = apiData.financial_analytics;
 
-    const financialSection = {
-        title: "التحليــلات المــاليــة :",
-        incomes: formatMap(financial.income, "/home/financial-analysis"),
-        orders: Object.entries(financial.completed_orders || {}).map(([key, item]) => ({
-            name: item?.label_ar ?? key,
-            value: formatMetricValue(item),
-            valueType: "count",
-            percentage: formatPercentage(item?.percentage_change),
-            type: key === "total" ? "total-regular" : key,
-            link: `/home/completed-orders?created_at=${key}`,
-        })),
-        incompleteOrders: formatMap(financial.incomplete_orders, "/home/incolpleted-orders-analysis", "count"),
-        returns: Object.entries(financial.refunds || {}).map(([key, item]) => ({
-            name: item?.label_ar ?? key,
-            value: formatMetricValue(item),
-            valueType: "price",
-            percentage: formatPercentage(item?.percentage_change),
-            type: key === "total" ? "total" : key,
-            link: `/home/return-orders?created_at=${key}`,
-        })),
-        expenses: formatMap(financial.expenses, "/home/expense-analysis"),
-    };
+    const financialIncomes = formatMap(financial.income, "/home/financial-analysis").map((card) => ({
+        ...card,
+        variant: "income",
+    }));
+
+    const financialOrders = Object.entries(financial.completed_orders || {}).map(([key, item]) => ({
+        name: item?.label_ar ?? key,
+        value: formatMetricValue(item),
+        valueType: "count",
+        percentage: formatPercentage(item?.percentage_change),
+        type: key === "total" ? "total-regular" : key,
+        link: `/home/completed-orders?created_at=${key}`,
+    }));
+
+    const financialIncomplete = formatMap(
+        financial.incomplete_orders,
+        "/home/incolpleted-orders-analysis",
+        "count"
+    );
+
+    const financialReturns = Object.entries(financial.refunds || {}).map(([key, item]) => ({
+        name: item?.label_ar ?? key,
+        value: formatMetricValue(item),
+        valueType: "price",
+        percentage: formatPercentage(item?.percentage_change),
+        type: "totalLoss",
+        link: `/home/return-orders?created_at=${key}`,
+    }));
+
+    const financialExpenses = formatMap(financial.expenses, "/home/expense-analysis");
 
     const userAnalytics = apiData.user_analytics ?? {};
 
-    const userSection = {
-        title: "تحلــيلات المستخدميــن : ",
-        usersAnalysis: formatMap(userAnalytics.new_users, "/home/user-analysis", "count"),
-        userAvtivity: [
-            userAnalytics.user_activity_rate && {
-                name: userAnalytics.user_activity_rate.label_ar,
-                value: `${userAnalytics.user_activity_rate.value ?? 0}%`,
-                valueType: "count",
-                type: "onlyNumber",
-            },
-            userAnalytics.most_clients_completed_requests && {
-                name: userAnalytics.most_clients_completed_requests.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_completed_requests),
-                type: "onlyNumber",
-                link: "/home/user-analysis/top_completed_orders",
-            },
-            userAnalytics.most_clients_incomplete_requests && {
-                name: userAnalytics.most_clients_incomplete_requests.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_incomplete_requests),
-                type: "onlyNumberTwoSpace",
-                link: "/home/user-analysis/top_incompleted_orders",
-            },
-        ].filter(Boolean),
-        userOrders: [
-            userAnalytics.most_clients_requests && {
-                name: userAnalytics.most_clients_requests.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_requests),
-                type: "onlyButton",
-                link: "/home/user-analysis/top_orders",
-            },
-            userAnalytics.most_clients_returns && {
-                name: userAnalytics.most_clients_returns.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_returns),
-                type: "onlyButton",
-                link: "/home/user-analysis/top_refunds",
-            },
-            userAnalytics.most_clients_real_estate && {
-                name: userAnalytics.most_clients_real_estate.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_real_estate),
-                type: "onlyButton",
-                link: "/home/user-analysis/top_properties",
-            },
-            userAnalytics.most_clients_units && {
-                name: userAnalytics.most_clients_units.label_ar,
-                value: formatMetricValue(userAnalytics.most_clients_units),
-                type: "onlyNumberTwoSpace",
-                link: "/home/user-analysis/top_units",
-            },
-        ].filter(Boolean),
-    };
+    const usersAnalysis = formatMap(userAnalytics.new_users, "/home/user-analysis", "count");
 
-    const ordersSection = {
-        title: "تحليــلات الطلبــات  : ",
-        orders: apiData.order_analytics.map((item) => ({
-            name: item.label_ar ?? "",
-            value:
-                item.type === "percentage"
-                    ? item.value != null && item.value !== ""
-                        ? `${item.value}%`
-                        : "—"
-                    : formatMetricValue(item),
+    const userActivity = [
+        userAnalytics.user_activity_rate && {
+            name: userAnalytics.user_activity_rate.label_ar,
+            value: `${userAnalytics.user_activity_rate.value ?? 0}%`,
             valueType: "count",
-            type: item.type === "percentage" ? "onlyNumber" : "regular",
-            link: getOrderAnalyticsLink(item.label_ar),
-        })),
-    };
-
-    const employeesSection = {
-        title: "تحليــلات الموظفيــن : ",
-        employeesAnalysis: apiData.employee_analytics.map((item) => {
-            let cardId = "total";
-            const key = (item.key || "").toLowerCase();
-            const label = item.label_ar || "";
-
-            if (key.includes("received") || label.includes("استلم") || label.includes("المستلمة")) {
-                cardId = "most_received_orders";
-            } else if (key.includes("completed") || label.includes("وثق") || label.includes("المكتملة")) {
-                cardId = "most_completed_orders";
-            } else if (
-                key.includes("incomplete") ||
-                key.includes("incompleted") ||
-                label.includes("غير مدفوع") ||
-                label.includes("الغير مدفوع")
-            ) {
-                cardId = "most_incompleted_orders";
-            } else if (
-                key.includes("refund") ||
-                key.includes("return") ||
-                label.includes("استرجاع") ||
-                label.includes("المرتجعة")
-            ) {
-                cardId = "most_refunded_orders";
-            }
-
-            return {
-                name: item.label_ar,
-                value: formatMetricValue(item),
-                valueType: item.type === "currency" ? "price" : "count",
-                type: Array.isArray(item.value) ? "arrayOfNames" : "regular",
-                link: `/home/staff-analysis/${cardId}`,
-            };
-        }),
-    };
-
-    const unitsSection = {
-        title: "تحليــلات العقــارات والوحــدات  : ",
-        propertiesAnalysis: [
-            ...formatMap(apiData.real_estate_and_units_analytics.real_estates, "/home/Properties-analysis", "count"),
-            ...formatMap(apiData.real_estate_and_units_analytics.units, "/home/Units-analysis", "count"),
-        ],
-    };
-
-    const locationsSection = {
-        title: "تحليــلات المــواقــع :",
-        locationsAnalysis: apiData.location_analytics.map((item) => ({
-            name: item.label_ar,
-            value: formatMetricValue(item),
-            valueType: item.type === "currency" ? "price" : "count",
-            percentage: formatPercentage(item.percentage_change),
             type: "onlyNumber",
-        })),
-    };
+        },
+        userAnalytics.most_clients_completed_requests && {
+            name: userAnalytics.most_clients_completed_requests.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_completed_requests),
+            names: mapPersonNames(
+                userAnalytics.most_clients_completed_requests.value,
+                formatMetricValue(userAnalytics.most_clients_completed_requests)
+            ),
+            showAvatars: true,
+            type: "onlyNumber",
+            link: "/home/user-analysis/top_completed_orders",
+        },
+        userAnalytics.most_clients_incomplete_requests && {
+            name: userAnalytics.most_clients_incomplete_requests.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_incomplete_requests),
+            names: mapPersonNames(
+                userAnalytics.most_clients_incomplete_requests.value,
+                formatMetricValue(userAnalytics.most_clients_incomplete_requests)
+            ),
+            showAvatars: true,
+            type: "onlyNumberTwoSpace",
+            link: "/home/user-analysis/top_incompleted_orders",
+        },
+    ].filter(Boolean);
 
-    const layeringSection = {
-        title: "تحليــلات انتقال الطلب من تصنيف الى تصنيف أخر  : ",
-        layeringAnalysis: apiData.order_transfer_analytics.map((item) => ({
+    const userOrders = [
+        userAnalytics.most_clients_requests && {
+            name: userAnalytics.most_clients_requests.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_requests),
+            names: mapPersonNames(
+                userAnalytics.most_clients_requests.value,
+                formatMetricValue(userAnalytics.most_clients_requests)
+            ),
+            showAvatars: true,
+            type: "onlyButton",
+            link: "/home/user-analysis/top_orders",
+        },
+        userAnalytics.most_clients_returns && {
+            name: userAnalytics.most_clients_returns.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_returns),
+            names: mapPersonNames(
+                userAnalytics.most_clients_returns.value,
+                formatMetricValue(userAnalytics.most_clients_returns)
+            ),
+            showAvatars: true,
+            type: "onlyButton",
+            link: "/home/user-analysis/top_refunds",
+        },
+        userAnalytics.most_clients_real_estate && {
+            name: userAnalytics.most_clients_real_estate.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_real_estate),
+            names: mapPersonNames(
+                userAnalytics.most_clients_real_estate.value,
+                formatMetricValue(userAnalytics.most_clients_real_estate)
+            ),
+            showAvatars: true,
+            type: "onlyButton",
+            link: "/home/user-analysis/top_properties",
+        },
+        userAnalytics.most_clients_units && {
+            name: userAnalytics.most_clients_units.label_ar,
+            value: formatMetricValue(userAnalytics.most_clients_units),
+            names: mapPersonNames(
+                userAnalytics.most_clients_units.value,
+                formatMetricValue(userAnalytics.most_clients_units)
+            ),
+            showAvatars: true,
+            type: "onlyNumberTwoSpace",
+            link: "/home/user-analysis/top_units",
+        },
+    ].filter(Boolean);
+
+    const orders = apiData.order_analytics.map((item) => ({
+        name: item.label_ar ?? "",
+        value:
+            item.type === "percentage"
+                ? item.value != null && item.value !== ""
+                    ? `${item.value}%`
+                    : "—"
+                : formatMetricValue(item),
+        valueType: "count",
+        type: item.type === "percentage" ? "onlyNumber" : "regular",
+        link: getOrderAnalyticsLink(item.label_ar),
+    }));
+
+    const employeesAnalysis = apiData.employee_analytics.map((item) => {
+        let cardId = "total";
+        const key = (item.key || "").toLowerCase();
+        const label = item.label_ar || "";
+
+        if (key.includes("received") || label.includes("استلم") || label.includes("المستلمة")) {
+            cardId = "most_received_orders";
+        } else if (key.includes("completed") || label.includes("وثق") || label.includes("المكتملة")) {
+            cardId = "most_completed_orders";
+        } else if (
+            key.includes("incomplete") ||
+            key.includes("incompleted") ||
+            label.includes("غير مدفوع") ||
+            label.includes("الغير مدفوع")
+        ) {
+            cardId = "most_incompleted_orders";
+        } else if (
+            key.includes("refund") ||
+            key.includes("return") ||
+            label.includes("استرجاع") ||
+            label.includes("المرتجعة")
+        ) {
+            cardId = "most_refunded_orders";
+        }
+
+        const nameList = Array.isArray(item.value)
+            ? item.value.filter(Boolean).map(String)
+            : parseNamesList(formatMetricValue(item));
+
+        const isEmployeeCountCard =
+            label.includes("عدد الموظف") || label.includes("عدد موظف");
+
+        return {
             name: item.label_ar,
-            value: formatMetricValue(item),
-            valueType: "count",
-            type: "regular",
-            link: "/home/layering-analysis/regular",
-        })),
-    };
+            value: Array.isArray(item.value) ? nameList.join(" ، ") : formatMetricValue(item),
+            names: nameList,
+            valueType: item.type === "currency" ? "price" : "count",
+            type: nameList.length > 0 ? "arrayOfNames" : "regular",
+            showAvatars: !isEmployeeCountCard,
+            link: `/home/staff-analysis/${cardId}`,
+        };
+    });
+
+    const propertiesAnalysis = formatMap(
+        apiData.real_estate_and_units_analytics.real_estates,
+        "/home/Properties-analysis",
+        "count"
+    );
+
+    const unitsAnalysis = formatMap(
+        apiData.real_estate_and_units_analytics.units,
+        "/home/Units-analysis",
+        "count"
+    );
+
+    const locationsAnalysis = apiData.location_analytics.map((item) => ({
+        name: item.label_ar,
+        value: formatMetricValue(item),
+        valueType: item.type === "currency" ? "price" : "count",
+        percentage: formatPercentage(item.percentage_change),
+        type: "onlyNumber",
+    }));
+
+    const layeringAnalysis = apiData.order_transfer_analytics.map((item) => ({
+        name: item.label_ar,
+        value: formatMetricValue(item),
+        valueType: "count",
+        type: "regular",
+        link: "/home/layering-analysis/regular",
+    }));
+
+    const employeesRow1 = employeesAnalysis.slice(0, 3);
+    const employeesRow2 = employeesAnalysis.slice(3);
 
     return (
         <>
@@ -276,102 +304,126 @@ export default function Statistics() {
                 secondURL="/home/analysis"
             />
             <div
-                className="flex flex-col gap-6 min-h-screen p-6 w-full min-w-0 max-w-full"
+                className="flex flex-col gap-2 min-h-screen w-full min-w-0 max-w-full -mx-[30px] max-[1700px]:-mx-[30px] px-[30px] py-6 bg-[#F8F9FA] rounded-tl-[24px]"
                 dir="rtl"
             >
-                <SectionBlock title={analysisData.title}>
-                    <CardGrid>
-                        {analysisData.incomes.map((item, index) => (
-                            <AnalsCard key={`control-${index}`} item={item} />
-                        ))}
-                    </CardGrid>
-                </SectionBlock>
+                {controlPanel.length > 0 && (
+                    <AnalysisSection title="لوحة التحكم :">
+                        <CardGrid>
+                            {controlPanel.map((item, index) => (
+                                <AnalsCard key={`control-${index}`} item={item} />
+                            ))}
+                        </CardGrid>
+                    </AnalysisSection>
+                )}
 
-                <SectionBlock title={financialSection.title}>
+                <AnalysisSection title="التحليــلات المــاليــة :">
                     <CardGrid>
-                        {financialSection.incomes.map((card, index) => (
+                        {financialIncomes.map((card, index) => (
                             <DayCard key={`fin-income-${index}`} item={card} />
                         ))}
                     </CardGrid>
                     <CardGrid>
-                        {financialSection.orders.map((card, index) => (
+                        {financialOrders.map((card, index) => (
                             <DayCard key={`fin-orders-${index}`} item={card} />
                         ))}
                     </CardGrid>
                     <CardGrid>
-                        {financialSection.incompleteOrders.map((card, index) => (
+                        {financialIncomplete.map((card, index) => (
                             <DayCard key={`fin-incomplete-${index}`} item={card} />
                         ))}
                     </CardGrid>
                     <CardGrid>
-                        {financialSection.returns.map((card, index) => (
+                        {financialReturns.map((card, index) => (
                             <DayCard key={`fin-returns-${index}`} item={card} />
                         ))}
                     </CardGrid>
                     <CardGrid>
-                        {financialSection.expenses.map((card, index) => (
+                        {financialExpenses.map((card, index) => (
                             <DayCard key={`fin-expenses-${index}`} item={card} />
                         ))}
                     </CardGrid>
-                </SectionBlock>
+                </AnalysisSection>
 
-                <SectionBlock title={userSection.title}>
+                <AnalysisSection title="تحلــيلات المستخدميــن :">
                     <CardGrid>
-                        {userSection.usersAnalysis.map((card, index) => (
+                        {usersAnalysis.map((card, index) => (
                             <UserCard key={`user-${index}`} item={card} />
                         ))}
                     </CardGrid>
-                    <CardGrid columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full min-w-0 mb-3">
-                        {userSection.userAvtivity.map((card, index) => (
+                    <CardGrid columns={GRID_2}>
+                        {userActivity.map((card, index) => (
                             <UserCard key={`user-activity-${index}`} item={card} />
                         ))}
                     </CardGrid>
-                    <CardGrid>
-                        {userSection.userOrders.map((card, index) => (
+                    <CardGrid columns={`${GRID_2} lg:grid-cols-4`}>
+                        {userOrders.map((card, index) => (
                             <UserCard key={`user-orders-${index}`} item={card} />
                         ))}
                     </CardGrid>
-                </SectionBlock>
+                </AnalysisSection>
 
-                <SectionBlock title={ordersSection.title}>
-                    <CardGrid columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full min-w-0 mb-3">
-                        {ordersSection.orders.map((card, index) => (
+                <AnalysisSection title="تحلــيلات الطلبــات :">
+                    <CardGrid columns={GRID_3}>
+                        {orders.map((card, index) => (
                             <OrderCard key={`order-${index}`} item={card} />
                         ))}
                     </CardGrid>
-                </SectionBlock>
+                </AnalysisSection>
 
-                <SectionBlock title={employeesSection.title}>
-                    <CardGrid columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full min-w-0 mb-3">
-                        {employeesSection.employeesAnalysis.map((card, index) => (
-                            <EmployeeCard key={`employee-${index}`} item={card} />
-                        ))}
-                    </CardGrid>
-                </SectionBlock>
+                <AnalysisSection title="تحلــيلات الموظفيــن :">
+                    {employeesRow1.length > 0 && (
+                        <CardGrid columns={GRID_3}>
+                            {employeesRow1.map((card, index) => (
+                                <EmployeeCard key={`employee-1-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
+                    {employeesRow2.length > 0 && (
+                        <CardGrid columns={GRID_2} className="max-w-full lg:max-w-[66%]">
+                            {employeesRow2.map((card, index) => (
+                                <EmployeeCard key={`employee-2-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
+                </AnalysisSection>
 
-                <SectionBlock title={unitsSection.title}>
-                    <CardGrid>
-                        {unitsSection.propertiesAnalysis.map((card, index) => (
-                            <UnitsCard key={`unit-${index}`} item={card} />
-                        ))}
-                    </CardGrid>
-                </SectionBlock>
+                <AnalysisSection title="تحلــيلات العقــارات والوحــدات :">
+                    {propertiesAnalysis.length > 0 && (
+                        <CardGrid>
+                            {propertiesAnalysis.map((card, index) => (
+                                <UnitsCard key={`property-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
+                    {unitsAnalysis.length > 0 && (
+                        <CardGrid>
+                            {unitsAnalysis.map((card, index) => (
+                                <UnitsCard key={`unit-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
+                </AnalysisSection>
 
-                <SectionBlock title={locationsSection.title}>
-                    <CardGrid columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full min-w-0 mb-3">
-                        {locationsSection.locationsAnalysis.map((card, index) => (
-                            <LocationsCard key={`location-${index}`} item={card} />
-                        ))}
-                    </CardGrid>
-                </SectionBlock>
+                {locationsAnalysis.length > 0 && (
+                    <AnalysisSection title="أكثر المدن توثيقاً للعقود :">
+                        <CardGrid columns={GRID_4}>
+                            {locationsAnalysis.map((card, index) => (
+                                <LocationsCard key={`location-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    </AnalysisSection>
+                )}
 
-                <SectionBlock title={layeringSection.title}>
-                    <CardGrid columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 w-full min-w-0 mb-3">
-                        {layeringSection.layeringAnalysis.map((card, index) => (
-                            <LayeringCard key={`layer-${index}`} item={card} />
-                        ))}
-                    </CardGrid>
-                </SectionBlock>
+                {layeringAnalysis.length > 0 && (
+                    <AnalysisSection title="تحليــلات انتقال الطلب من تصنيف الى تصنيف أخر :" defaultOpen={false}>
+                        <CardGrid columns={`${GRID_3} xl:grid-cols-6`}>
+                            {layeringAnalysis.map((card, index) => (
+                                <LayeringCard key={`layer-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    </AnalysisSection>
+                )}
             </div>
         </>
     );
