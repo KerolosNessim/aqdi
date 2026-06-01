@@ -8,6 +8,7 @@ export const useUserStore = create(
       user: null,
       token: null,
       isAuthenticated: false,
+      _hasHydrated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => {
@@ -38,6 +39,21 @@ export const useUserStore = create(
     {
       name: 'user-storage',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (typeof window !== 'undefined') {
+          const storedToken = localStorage.getItem('token');
+          if (storedToken && !state?.token) {
+            useUserStore.setState({ token: storedToken, isAuthenticated: true });
+          }
+        }
+
+        useUserStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );

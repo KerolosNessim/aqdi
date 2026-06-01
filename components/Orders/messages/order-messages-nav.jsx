@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useOrderMessageAlerts } from "@/src/hooks/use-order-message-alerts";
 import OrderMessageDialog from "./order-message-dialog";
+import OrderContractPeriodsDialog from "./order-contract-periods-dialog";
 import {
   groupAlertsBySection,
   isMessageOnline,
@@ -245,10 +246,24 @@ function MessagesMenu({
   );
 }
 
+function PricesTriggerButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-[13px] font-semibold text-white transition-colors outline-none"
+    >
+      الأسعار
+      <i className="fa-solid fa-chevron-down text-[10px] text-white" aria-hidden />
+    </button>
+  );
+}
+
 export default function OrderMessagesNav() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pricesDialogOpen, setPricesDialogOpen] = useState(false);
   const { employeeAlerts, clientAlerts, isLoading } = useOrderMessageAlerts(true);
 
   const handleSelect = (alert) => {
@@ -285,12 +300,26 @@ export default function OrderMessagesNav() {
           onClose={() => setActiveMenu(null)}
           onSelect={handleSelect}
         />
+        <DotSeparator />
+        <PricesTriggerButton
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setActiveMenu(null);
+            setPricesDialogOpen(true);
+          }}
+        />
       </nav>
 
       <OrderMessageDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         messageAlert={selectedAlert}
+      />
+
+      <OrderContractPeriodsDialog
+        open={pricesDialogOpen}
+        onOpenChange={setPricesDialogOpen}
       />
     </>
   );

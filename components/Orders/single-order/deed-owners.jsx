@@ -1,34 +1,22 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import ImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/image-gallery.css";
 import { BiEdit, BiSolidCopy } from "react-icons/bi";
 import { toast } from "sonner";
-import { HiMiniBellAlert } from "react-icons/hi2";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { TbPentagonMinus } from "react-icons/tb";
-import { MdChevronLeft } from "react-icons/md";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import NotClear from "./not-clear";
-import NotClearAgent from "./not-clear-agent";
+import dynamic from "next/dynamic";
 import { ContractStepEditor } from "./contract-edit/contract-step-editor";
 import {
   SUMMARY_OWNER_FIELDS,
   SUMMARY_AGENT_FIELDS,
 } from "./contract-edit/contract-field-schemas";
+
+const OrderSectionErrorMenu = dynamic(
+  () => import("@/components/Orders/messages/order-section-error-menu"),
+  { ssr: false }
+);
 
 
 
@@ -36,6 +24,30 @@ const display = (value) => {
   if (value === null || value === undefined || value === "") return "--";
   return value;
 };
+
+const resolveImageUrl = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value === "object") {
+    return value.url || value.path || value.full_url || value.src || null;
+  }
+  return null;
+};
+
+const INSTRUMENT_IMAGE_FIELDS = [
+  { key: "image_instrument", label: "صورة الصك" },
+  { key: "image_instrument_from_the_front", label: "صورة الصك من الأمام" },
+  { key: "image_instrument_from_the_back", label: "صورة الصك من الخلف" },
+  {
+    key: "copy_power_of_attorney_from_heirs_to_agent",
+    label: "نسخة الوكالة من الورثة للوكيل",
+  },
+  {
+    key: "copy_of_the_endowment_registration_certificate",
+    label: "نسخة شهادة تسجيل الوقف",
+  },
+  { key: "copy_of_the_trusteeship_deed", label: "نسخة صك النظارة" },
+];
 
  const copy = (value) => {
   if (!value) return;
@@ -58,27 +70,21 @@ const InfoItem = ({ value, label }) => (
 
 const DeedOwners = ({ data }) => {
   const galleryRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [openAgent, setOpenAgent] = useState(false);
 
 const orderData = data?.contract_summary
 
   /* ================= Images ================= */
-  let images = [
-    orderData?.image_instrument ,
-    orderData?.image_instrument_from_the_front ,
-    orderData?.image_instrument_from_the_back ,
-  ]
-    .filter(Boolean)
-    .map((img) => ({
-      original: img,
-      thumbnail: img,
-    }));
+  const images = INSTRUMENT_IMAGE_FIELDS.map(({ key, label }) => {
+    const url = resolveImageUrl(orderData?.[key]);
+    if (!url) return null;
 
-  if (images.length === 0) {
-    images = [
-    ];
-  }
+    return {
+      original: url,
+      thumbnail: url,
+      description: label,
+      originalAlt: label,
+    };
+  }).filter(Boolean);
 
   /* ================= Owner ================= */
   const owner = {
@@ -146,23 +152,11 @@ const orderData = data?.contract_summary
                 </div>
               </div>
 
-              <DropdownMenu dir="rtl">
-              <DropdownMenuTrigger asChild>
-                <Button className="text-xs p-4 bg-pink-200 text-pink-600 rounded-full">
-                  إرسال خطأ <HiMiniBellAlert />
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent className="p-4 rounded-3xl">
-                <DropdownMenuGroup className="space-y-2">
-                  <DropdownMenuItem onClick={() => setOpen(true)}>
-                    <TbPentagonMinus />
-                    صورة الصك غير واضحة
-                    <MdChevronLeft />
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-              </DropdownMenu>
+              <OrderSectionErrorMenu
+                label="إرسال خطأ"
+                orderData={data}
+                context="owner"
+              />
             </div>
           </ContractStepEditor>
         </div>
@@ -184,49 +178,16 @@ const orderData = data?.contract_summary
                   </div>
                 </div>
 
-                <DropdownMenu dir="rtl">
-                <DropdownMenuTrigger asChild>
-                  <Button className="text-xs p-4 bg-pink-200 text-pink-600 rounded-full">
-                    خطأ الوكيل <HiMiniBellAlert />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent className="p-4 rounded-3xl">
-                  <DropdownMenuGroup className="space-y-2">
-                    <DropdownMenuItem onClick={() => setOpenAgent(true)}>
-                      <TbPentagonMinus />
-                      بيانات غير صحيحة
-                      <MdChevronLeft />
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-                </DropdownMenu>
+                <OrderSectionErrorMenu
+                  label="خطأ الوكيل"
+                  orderData={data}
+                  context="agent"
+                />
               </div>
             </ContractStepEditor>
           </div>
         )}
       </div>
-
-      {/* dialogs */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogDescription>
-              <NotClear setOpen={setOpen} />
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={openAgent} onOpenChange={setOpenAgent}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogDescription>
-              <NotClearAgent setOpen={setOpenAgent} />
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -143,9 +143,7 @@ export default function LoginPage() {
                       <span className="text-[13px] font-medium text-[#616161] group-hover:text-black transition-colors">تــذكرني</span>
                     </label>
                   </FormControl>
-                  <Link href="/reset" className="text-[13px] font-medium text-brand-main hover:text-brand-hover transition-colors">
-                    هل نسيــت كلمة المــرور !
-                  </Link>
+                   
                 </div>
                 <FormMessage className="text-[#FF4444] text-[12px]" />
               </FormItem>

@@ -10,23 +10,39 @@ import { getSectionForPath } from '@/src/lib/permissions';
 export default function RoutePermissionGuard({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { canRoute, isReady, firstAllowedHref } = usePermissions();
+  const { canRoute, isReady, isPermissionsLoading, firstAllowedHref, user } = usePermissions();
 
   const section = getSectionForPath(pathname);
   const allowed = canRoute(pathname);
+  const requiresPermissionCheck = section !== null;
 
   useEffect(() => {
-    if (!isReady || allowed) return;
+    if (!isReady) return;
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    if (allowed || isPermissionsLoading) return;
 
     toast.error('ليس لديك صلاحية للوصول إلى هذه الصفحة');
     router.replace(firstAllowedHref);
-  }, [isReady, allowed, firstAllowedHref, router]);
+  }, [isReady, allowed, firstAllowedHref, isPermissionsLoading, router, user]);
 
   if (!isReady) {
     return <Loader />;
   }
 
-  if (!allowed && section) {
+  if (!user) {
+    return <Loader />;
+  }
+
+  if (isPermissionsLoading && requiresPermissionCheck) {
+    return <Loader />;
+  }
+
+  if (!allowed && requiresPermissionCheck) {
     return <Loader />;
   }
 

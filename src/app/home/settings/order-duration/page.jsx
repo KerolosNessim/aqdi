@@ -1,105 +1,153 @@
-"use client"
-import Header from '@/components/home/Header'
-import React, { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Loader2, Pentagon } from 'lucide-react';
-import AddNewTypeDialog from '@/components/analysis/settings/unit-types/add-new-type-dialog';
-import { axiosInstance } from '@/src/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import EditTypeUnitDialog from '@/components/analysis/settings/unit-types/edit-type-unit-dialog';
-import AddNewPropertyTypeDialog from '@/components/analysis/settings/property-types/add-new-property-type-dialog';
-import EditTypePropertyDialog from '@/components/analysis/settings/property-types/edit-type-property-dialog';
-import AddNewDurationDialog from '@/components/analysis/settings/order-duration/add-new-duration-dialog';
-import EditDurationDialog from '@/components/analysis/settings/order-duration/edit-duration-dialog';
-export default function OrderDurationPage() {
-  const [activeTab, setActiveTab] = useState("housing");
+"use client";
+
+import AddNewDurationDialog from "@/components/analysis/settings/order-duration/add-new-duration-dialog";
+import EditDurationDialog from "@/components/analysis/settings/order-duration/edit-duration-dialog";
+import ViewDurationDialog from "@/components/analysis/settings/order-duration/view-duration-dialog";
+import Header from "@/components/home/Header";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  formatContractPeriodPrice,
+  getContractPeriodLabel,
+  getContractTypeLabel,
+  groupContractPeriodsByInstrumentType,
+  normalizeContractPeriods,
+} from "@/src/lib/contract-period-utils";
+import { axiosInstance } from "@/src/utils/axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Pentagon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+function DurationCard({ item, onDelete, deletePending }) {
+  const contractLabel = getContractTypeLabel(item?.contract_type);
+
+  return (
+    <div className="bg-gray-200 rounded-[16px] border border-[#E4E4E4] p-4 transition-all">
+      <div className="flex items-start justify-between gap-2">
+        <Button
+          disabled={deletePending}
+          onClick={() => onDelete(item.id)}
+          className="bg-red-500/20 text-red-500 text-xs h-8"
+        >
+          حذف
+        </Button>
+        <h3 className="text-sm font-bold">عقد {contractLabel}</h3>
+      </div>
+      <div className="mt-4 space-y-1">
+        <p className="text-sm font-bold">مدة العقد: {getContractPeriodLabel(item)}</p>
+        <p className="text-sm text-[#616161]">
+          السعر: {formatContractPeriodPrice(item?.price) || "—"}
+        </p>
+      </div>
+      <div className="flex items-center justify-end gap-2 mt-4">
+        <ViewDurationDialog duration={item} />
+        <EditDurationDialog duration={item} />
+      </div>
+    </div>
+  );
+}
+
+function DurationSections({ activeTab }) {
   const queryClient = useQueryClient();
 
-  // get all unit types
-  function getOrderDurations() {
-    return axiosInstance(`/admin/contract-periods?contract_type=${activeTab}`);
-  }
-
-  const { data: orderDurations, isLoading: orderDurationsLoading } = useQuery({
+  const { data: orderDurations, isLoading } = useQuery({
     queryKey: ["contract-periods", activeTab],
-    queryFn: getOrderDurations,
-  })
+    queryFn: () => axiosInstance.get(`/admin/contract-periods?contract_type=${activeTab}`),
+  });
 
-  const data = orderDurations?.data?.data?.data;
+  const items = normalizeContractPeriods(orderDurations?.data);
+  const sections = groupContractPeriodsByInstrumentType(items);
+  const contractLabel = getContractTypeLabel(activeTab);
 
-
-  // delete unit type
-  function deleteOrderDuration(id) {
-    return axiosInstance.post(`/admin/contract-periods/${id}/delete`);
-  }
-
-  const { mutate: deleteOrderDurationMutate, isPending: deleteOrderDurationPending } = useMutation({
-    mutationFn: deleteOrderDuration,
+  const { mutate: deleteOrderDuration, isPending: deletePending } = useMutation({
+    mutationFn: (id) => axiosInstance.post(`/admin/contract-periods/${id}/delete`),
     onSuccess: (res) => {
       toast.success(res?.data?.message || "تم حذف المدة بنجاح");
-      queryClient.invalidateQueries({
-        queryKey: ["contract-periods", activeTab]
-      });
+      queryClient.invalidateQueries({ queryKey: ["contract-periods", activeTab] });
+      queryClient.invalidateQueries({ queryKey: ["contract-periods"] });
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || "حدث خطأ أثناء حذف المدة");
-    }
-  })
+    },
+  });
 
+  if (isLoading) {
+    return <p className="text-sm text-[#A3A3A3] py-8">جاري التحميل...</p>;
+  }
 
+  if (!sections.length) {
+    return <p className="text-sm text-[#A3A3A3] py-8">لا توجد مدد عقد</p>;
+  }
 
   return (
-    <div className='p-6'>
-      <Header page='welcome' title={"الإعـدادات"} isMain={false} first="الرئيــسية" firstURL="/" second='الإعـدادات' secondURL="/home/settings" third="مدة العقد" thirdURL="/home/settings/order-duration" />
-      <div>
-        <Tabs dir='rtl' defaultValue={activeTab} className="w-full">
-          <div className='flex items-center justify-between mb-4'>
-            <TabsList className="bg-transparent gap-4">
-              <TabsTrigger value="housing" onClick={() => setActiveTab("housing")} className="data-[state=active]:bg-brand-hover data-[state=active]:text-white font-bold p-4 px-8 rounded-full gap-2 bg-gray-200"> <Pentagon className='w-4 h-4' />سكني</TabsTrigger>
-              <TabsTrigger value="commercial" onClick={() => setActiveTab("commercial")} className="data-[state=active]:bg-brand-hover data-[state=active]:text-white font-bold p-4 px-8 rounded-full gap-2 bg-gray-200"> <Building2 className='w-4 h-4' />تجاري</TabsTrigger>
-            </TabsList>
-            <AddNewDurationDialog />
-          </div >
-          <TabsContent value="housing" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {data?.map((item) => (
-              <div className='bg-gray-200 rounded-[16px] border border-[#E4E4E4] p-4    transition-all group' key={item.id}>
-                <h3>{item?.contract_type }</h3>
-                <div className=' mt-4'>
-                  <p className='text-sm font-bold'> مدة العقد : {item.period}</p>
-                  <div className='flex items-center justify-end gap-2 mt-4'>
-                    <EditDurationDialog duration={item} />
-                    <Button disabled={deleteOrderDurationPending} onClick={() => deleteOrderDurationMutate(item.id)} className='bg-red-500/20 text-red-500 text-xs'>
-                      حذف
-                    </Button>
-                  </div>
-
-                </div>
-              </div>
+    <div className="space-y-8">
+      {sections.map((section) => (
+        <section key={section.id}>
+          <h2 className="text-sm font-bold text-[#616161] mb-4">
+            عقد {contractLabel} - تصنيف وثيقة الملكية - {section.name} :
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {section.items.map((item) => (
+              <DurationCard
+                key={item.id}
+                item={item}
+                onDelete={deleteOrderDuration}
+                deletePending={deletePending}
+              />
             ))}
-          </TabsContent>
-          <TabsContent value="commercial" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {data?.map((item) => (
-              <div className='bg-gray-200 rounded-[16px] border border-[#E4E4E4] p-4    transition-all group' key={item.id}>
-                <h3>{item?.contract_type }</h3>
-                <div className=' mt-4'>
-                  <p className='text-sm font-bold'> مدة العقد : {item.period}</p>
-                  <div className='flex items-center justify-end  gap-2 mt-4'>
-                    <EditDurationDialog duration={item} />
-                    <Button disabled={deleteOrderDurationPending} onClick={() => deleteOrderDurationMutate(item.id)} className='bg-red-500/20 text-red-500 text-xs'>
-                      حذف
-                    </Button>
-                  </div>
-
-                </div>
-              </div>
-            ))}
-          </TabsContent>
-        </Tabs>
-
-      </div>
-
+          </div>
+        </section>
+      ))}
     </div>
-  )
+  );
+}
+
+export default function OrderDurationPage() {
+  const [activeTab, setActiveTab] = useState("housing");
+
+  return (
+    <div className="p-6">
+      <Header
+        page="welcome"
+        title="الإعـدادات"
+        isMain={false}
+        first="الرئيــسية"
+        firstURL="/"
+        second="الإعـدادات"
+        secondURL="/home/settings"
+        third="مدة العقد"
+        thirdURL="/home/settings/order-duration"
+      />
+
+      <Tabs dir="rtl" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="bg-transparent gap-4">
+            <TabsTrigger
+              value="housing"
+              className="data-[state=active]:bg-brand-hover data-[state=active]:text-white font-bold p-4 px-8 rounded-full gap-2 bg-gray-200"
+            >
+              <Pentagon className="w-4 h-4" />
+              سكني
+            </TabsTrigger>
+            <TabsTrigger
+              value="commercial"
+              className="data-[state=active]:bg-brand-hover data-[state=active]:text-white font-bold p-4 px-8 rounded-full gap-2 bg-gray-200"
+            >
+              <Building2 className="w-4 h-4" />
+              تجاري
+            </TabsTrigger>
+          </TabsList>
+          <AddNewDurationDialog activeTab={activeTab} />
+        </div>
+
+        <TabsContent value="housing">
+          <DurationSections activeTab="housing" />
+        </TabsContent>
+        <TabsContent value="commercial">
+          <DurationSections activeTab="commercial" />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }

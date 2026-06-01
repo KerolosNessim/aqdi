@@ -16,6 +16,7 @@ import {
 
 export function usePermissions() {
   const user = useUserStore((state) => state.user);
+  const hasHydrated = useUserStore((state) => state._hasHydrated);
   const setUser = useUserStore((state) => state.setUser);
 
   const storedPermissions = useMemo(() => normalizeUserPermissions(user), [user]);
@@ -31,6 +32,7 @@ export function usePermissions() {
     },
     enabled: shouldFetchRole,
     staleTime: 1000 * 60 * 10,
+    retry: 1,
   });
 
   useEffect(() => {
@@ -49,9 +51,15 @@ export function usePermissions() {
     });
   }, [rolePermissionsData, setUser]);
 
-  const permissions = useMemo(() => normalizeUserPermissions(user), [user]);
+  const permissions = useMemo(() => {
+    const fromUser = normalizeUserPermissions(user);
+    if (fromUser.length > 0) return fromUser;
+    if (rolePermissionsData) return extractPermissionsFromRole(rolePermissionsData);
+    return [];
+  }, [user, rolePermissionsData]);
 
-  const isReady = !shouldFetchRole || !rolePermissionsLoading;
+  const isReady = hasHydrated;
+  const isPermissionsLoading = shouldFetchRole && rolePermissionsLoading;
 
   const can = useCallback(
     (section, action = 'view') => canAccess(permissions, user, section, action),
@@ -71,6 +79,7 @@ export function usePermissions() {
     roleId: user?.role_id ?? null,
     isAdmin,
     isReady,
+    isPermissionsLoading,
     can,
     canRoute,
     getSectionForPath,
