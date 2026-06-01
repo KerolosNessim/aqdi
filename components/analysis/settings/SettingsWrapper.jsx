@@ -34,7 +34,7 @@ export default function SettingsWrapper() {
         { label: "مدة الطلب", link: "/home/settings/order-duration" },
         { label: "اقسام الرسائل", link: "/home/settings/message-sections" },
         { label: "بنود أقسام الرسائل", link: "/home/settings/message-section-items" },
-        { label: "رســائل توضيحية للعمــلاء", link: "/home/settings/message-for-clients" },
+        { label: "رســائل توضيحية للعمــلاء", link: "/home/settings/customer-app-messages" },
         { label: "رســائل توضيحية للموظفيــن", link: "/home/settings/message-for-employee" },
         { label: "رسائل توضيحية للعقار", link: "/home/settings/message-for-property" },
         { label: "الخصومات", link: "/home/settings/coupons" },
@@ -45,9 +45,9 @@ export default function SettingsWrapper() {
         { label: "سياسة الخصوصية", link: "/home/settings/privacy" },
         { label: "الإشعارات", link: "#" },
         { label: "المدفوعات", link: "/home/settings/payments" },
-        { label: "حدود الطلبات أو إضافية", link: "#" },
-        { label: "رسائل التطبيقية للعميل", link: "#" },
-        { label: "طرق الدفع", link: "#" },
+        { label: "رسائل التطبيقية للعميل", link: "/home/settings/customer-app-messages" },
+        { label: "طرق الدفع", link: "/home/settings/payment-types" },
+        { label: "أوراق العمل", link: "/home/settings/paperworks" },
     ];
 
     const handleToggle = (id) => {

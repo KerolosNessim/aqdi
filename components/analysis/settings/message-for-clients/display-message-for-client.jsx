@@ -23,7 +23,7 @@ export default function DisplayMessageForClientDialog({ messageAlert }) {
         <DialogHeader>
           <div className='flex items-center justify-between  border-b pb-6'>
             {/* header and close button */}
-            <h2 className='text-xl font-bold'>عرض رســالة توضيحية جديدة</h2>
+            <h2 className='text-xl font-bold'>عرض رسالة توضيحية</h2>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               <X className='w-4 h-4' />
             </Button>

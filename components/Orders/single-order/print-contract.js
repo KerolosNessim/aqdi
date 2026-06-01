@@ -34,11 +34,23 @@ export function buildContractPrintHtml(orderData) {
   const step4 = orderData.step4 ?? {};
   const user = orderData.user ?? {};
 
+  const resolveImageUrl = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value.trim() || null;
+    if (typeof value === "object") {
+      return value.url || value.path || value.full_url || value.src || null;
+    }
+    return null;
+  };
+
   const images = [
     summary.image_instrument,
     summary.image_instrument_from_the_front,
     summary.image_instrument_from_the_back,
-  ].filter(Boolean);
+    summary.copy_power_of_attorney_from_heirs_to_agent,
+  ]
+    .map(resolveImageUrl)
+    .filter(Boolean);
 
   const imagesHtml = images.length
     ? `<div class="images">${images
@@ -121,7 +133,7 @@ export function buildContractPrintHtml(orderData) {
     ["رقم الهوية", summary.property_owner_id_num],
     ["تاريخ الميلاد", summary.property_owner_dob],
     ["رقم الجوال", summary.property_owner_mobile],
-    ["ايبان المالك", summary.property_owner_iban],
+   // ["ايبان المالك", summary.property_owner_iban],
     ["المنطقة", summary.relation_labels?.property_region],
     ["المدينة", summary.relation_labels?.property_city],
     ["الحي", summary.neighborhood],

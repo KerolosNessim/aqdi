@@ -3,6 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "@/src/utils/axios";
 import { normalizeMessageAlerts } from "@/components/Orders/messages/order-message-utils";
+import { getMessagesByType, parseCustomerMessagesAll } from "@/src/lib/customer-messages";
+
+async function fetchCustomerMessagesForOrders() {
+  const res = await axiosInstance.get("/admin/customer-messages/all");
+  return parseCustomerMessagesAll(res.data);
+}
 
 export function useOrderMessageAlerts(enabled = true) {
   const employeeQuery = useQuery({
@@ -13,21 +19,29 @@ export function useOrderMessageAlerts(enabled = true) {
     staleTime: 60_000,
   });
 
-  const clientQuery = useQuery({
-    queryKey: ["message-alerts-client", "orders-nav"],
-    queryFn: () =>
-      axiosInstance.get("/admin/message-alerts/client").then((res) => res.data),
+  const customerMessagesQuery = useQuery({
+    queryKey: ["customer-messages", "all", "orders-nav"],
+    queryFn: fetchCustomerMessagesForOrders,
     enabled,
     staleTime: 60_000,
   });
 
+  const customerMessages = customerMessagesQuery.data?.messages ?? [];
+  const clientPayload = { data: { items: getMessagesByType(customerMessages, "client") } };
+  const propertyPayload = { data: { items: getMessagesByType(customerMessages, "property") } };
+
   const employeeAlerts = normalizeMessageAlerts(employeeQuery.data);
-  const clientAlerts = normalizeMessageAlerts(clientQuery.data);
+  const clientAlerts = normalizeMessageAlerts(clientPayload);
+  const propertyAlerts = normalizeMessageAlerts(propertyPayload);
 
   return {
     employeeAlerts,
     clientAlerts,
-    isLoading: employeeQuery.isLoading || clientQuery.isLoading,
-    hasAlerts: employeeAlerts.length > 0 || clientAlerts.length > 0,
+    propertyAlerts,
+    isLoading: employeeQuery.isLoading || customerMessagesQuery.isLoading,
+    hasAlerts:
+      employeeAlerts.length > 0 ||
+      clientAlerts.length > 0 ||
+      propertyAlerts.length > 0,
   };
 }
