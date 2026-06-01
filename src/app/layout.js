@@ -2,6 +2,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import './globals.css';
 import { Toaster } from 'sonner';
 import ReactQueryProvider from '../utils/providers/ReactQueryProvider';
+import StoreHydrator from '@/components/auth/StoreHydrator';
 export async function generateMetadata() {
   return {
     title: 'Aakdi',
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
     <html lang="ar" dir="rtl">
       <body suppressHydrationWarning={true}>
         <ReactQueryProvider>
+          <StoreHydrator />
           {children}
         </ReactQueryProvider>
         <Toaster position="top-right" richColors />
