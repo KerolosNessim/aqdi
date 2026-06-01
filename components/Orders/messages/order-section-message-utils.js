@@ -1,42 +1,4 @@
-const ORDER_MESSAGE_CONTEXTS = {
-  owner: {
-    patterns: [/صك/i, /المالك/i, /وثيق/i, /deed/i, /owner/i],
-    excludePatterns: [/وكيل/i, /agent/i],
-  },
-  agent: {
-    patterns: [/وكيل/i, /agent/i],
-    excludePatterns: [],
-  },
-  propertyAddress: {
-    patterns: [/عنوان/i, /الوطني/i, /address/i, /national/i, /العنوان/i, /صحيح/i, /مبنى/i, /حي/i, /شارع/i],
-    excludePatterns: [/وكيل/i, /صك/i, /المالك/i],
-  },
-  propertyDetails: {
-    patterns: [/عقار/i, /property/i, /وحدة/i, /طابق/i, /استخدام/i, /نوع/i],
-    excludePatterns: [/عنوان/i, /الوطني/i, /وكيل/i, /صك/i],
-  },
-};
-
-function matchesContext(haystack, context) {
-  const config = ORDER_MESSAGE_CONTEXTS[context];
-  if (!config) return true;
-  if (config.excludePatterns?.some((pattern) => pattern.test(haystack))) return false;
-  return config.patterns.some((pattern) => pattern.test(haystack));
-}
-
-export function filterAlertsByOrderContext(alerts, context) {
-  if (!Array.isArray(alerts) || !context) return [];
-
-  const filtered = alerts.filter((alert) => {
-    const sectionName = alert?.section?.name_ar || alert?.section?.name_en || "";
-    const itemName =
-      alert?.section_item?.name_ar || alert?.section_item?.name_en || "";
-    const messageText = alert?.message || "";
-    return matchesContext(`${sectionName} ${itemName} ${messageText}`, context);
-  });
-
-  return filtered.length > 0 ? filtered : alerts;
-}
+/** بيانات الطلب المستخدمة في إرسال الخطأ عبر واتساب (منفصلة عن رسائل الأقسام) */
 
 export function getOrderSectionFields(orderData, context) {
   const summary = orderData?.contract_summary ?? {};
@@ -49,7 +11,7 @@ export function getOrderSectionFields(orderData, context) {
       { label: "رقم الهوية", value: summary.property_owner_id_num },
       { label: "تاريخ الميلاد", value: summary.property_owner_dob },
       { label: "رقم الجوال", value: summary.property_owner_mobile },
-    //  { label: "ايبان المالك", value: summary.property_owner_iban },
+      { label: "ايبان المالك", value: summary.property_owner_iban },
       { label: "المنطقة", value: summary.relation_labels?.property_region },
       { label: "المدينة", value: summary.relation_labels?.property_city },
       { label: "الحي", value: summary.neighborhood },
@@ -60,7 +22,13 @@ export function getOrderSectionFields(orderData, context) {
   if (context === "agent") {
     return [
       { label: "رقم الطلب", value: orderId },
-      { label: "اسم الوكيل", value: summary.name_owner },
+      {
+        label: "اسم الوكيل",
+        value:
+          summary.name_of_property_owner_agent ??
+          summary.property_owner_agent_name ??
+          summary.name_owner,
+      },
       { label: "رقم الهوية", value: summary.id_num_of_property_owner_agent },
       { label: "تاريخ الميلاد", value: summary.dob_of_property_owner_agent },
       { label: "رقم الجوال", value: summary.mobile_of_property_owner_agent },
@@ -123,41 +91,42 @@ export function getOrderId(orderData) {
   return getOrderContractUuid(orderData) || orderData?.id || summary?.id || "";
 }
 
-export function getErrorTypeLabel(alert) {
-  return (
-    alert?.section_item?.name_ar ||
-    alert?.section_item?.name_en ||
-    alert?.section?.name_ar ||
-    alert?.section?.name_en ||
-    alert?.message?.trim()?.split("\n")[0] ||
-    "رسالة خطأ"
-  );
+export function normalizeWhatsAppPhone(phone) {
+  const digits = String(phone ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("966")) return digits;
+  if (digits.startsWith("0")) return `966${digits.slice(1)}`;
+  if (digits.length === 9) return `966${digits}`;
+  return digits;
 }
 
-export function composeOrderErrorMessage(alert, orderData) {
-  const template = (alert?.message || "").trim();
-  const orderId = getOrderId(orderData);
-  if (!template && !orderId) return "";
-  if (!orderId) return template;
-  if (!template) return `رقم الطلب: ${orderId}`;
-  return `${template}\n\nرقم الطلب: ${orderId}`;
-}
-
-export function composeOrderSectionMessage(alert, orderData) {
-  return composeOrderErrorMessage(alert, orderData);
-}
-
-export function getAlertDialogTitle(alert) {
-  return getErrorTypeLabel(alert);
+export function buildWhatsAppUrl(phone, messageText) {
+  const normalized = normalizeWhatsAppPhone(phone);
+  if (!normalized) return null;
+  const text = encodeURIComponent(messageText || "");
+  return `https://wa.me/${normalized}${text ? `?text=${text}` : ""}`;
 }
 
 export function getOrderClientPhone(orderData) {
+  return getOrderPhoneForContext(orderData, "owner");
+}
+
+export function getOrderPhoneForContext(orderData, context) {
   const summary = orderData?.contract_summary ?? {};
+
+  if (context === "agent") {
+    return summary?.mobile_of_property_owner_agent || "";
+  }
+
   return (
     summary?.property_owner_mobile ||
     orderData?.user?.mobile ||
     orderData?.user_mobile ||
-    summary?.mobile_of_property_owner_agent ||
     ""
   );
+}
+
+export function getWhatsAppRecipientLabel(context) {
+  if (context === "agent") return "الوكيل";
+  return "العميل";
 }

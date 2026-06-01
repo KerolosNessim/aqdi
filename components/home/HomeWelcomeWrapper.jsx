@@ -7,77 +7,112 @@ import waving from '@/public/images/waving.svg'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useUserStore } from '@/src/stores/user-store'
+import { ArrowUpRight } from 'lucide-react'
+
+function formatArabicTime(date) {
+    const hours = date.getHours()
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const hour12 = hours % 12 || 12
+    const period = hours < 12 ? 'صباحاً' : 'مساءً'
+    return `${hour12}:${minutes} ${period}`
+}
+
+function formatArabicDate(date) {
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day} / ${month} / ${year}`
+}
+
+function getFirstName(fullName) {
+    if (!fullName) return ''
+    return fullName.trim().split(/\s+/)[0]
+}
 
 export default function HomeWelcomeWrapper() {
-    const [time, setTime] = useState('');
-    const [date, setDate] = useState('');
-    const router = useRouter();
-    const { user, logout } = useUserStore();
+    const [time, setTime] = useState('')
+    const [date, setDate] = useState('')
+    const router = useRouter()
+    const { user } = useUserStore()
+    const firstName = getFirstName(user?.name)
+    const roleLabel = user?.role_relation?.name ?? ''
+
     useEffect(() => {
         const updateTime = () => {
-            const now = new Date();
+            const now = new Date()
+            setTime(formatArabicTime(now))
+            setDate(formatArabicDate(now))
+        }
 
-            // Time format: 10:48 صبـاحا
-            const formattedTime = new Intl.DateTimeFormat('ar-EG', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-            }).format(now);
+        updateTime()
+        const interval = setInterval(updateTime, 1000)
 
-            // Date format: 11 / 10 / 2025
-            const formattedDate = new Intl.DateTimeFormat('ar-EG', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-            })
-                .format(now)
-                .replace(/\//g, ' / '); // Add spaces around slashes for your style
-
-            setTime(formattedTime);
-            setDate(formattedDate);
-        };
-
-        updateTime();
-        const interval = setInterval(updateTime, 1000); // update every second
-
-        return () => clearInterval(interval);
-    }, []);
+        return () => clearInterval(interval)
+    }, [])
 
     return (
         <>
-            <Header page='welcome' title={null} isMain={true}
-            // first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis"
-            />
-            <div className="[&>h1]:text-[24px] [&>h1]:font-bold [&>h1]:text-black [&>h1]:mb-[15px] [&>p]:text-[14px] [&>p]:text-[#363636] [&>p]:max-w-2xl [&>p]:mb-[44px]">
+            <Header page="welcome" title={null} isMain={true} />
+
+            <div className="[&>h1]:mb-[15px] [&>h1]:text-[24px] [&>h1]:font-bold [&>h1]:text-black [&>p]:mb-[44px] [&>p]:max-w-2xl [&>p]:text-[14px] [&>p]:text-[#363636]">
                 <h1>الإتقــان طريــق الخلــود في الأثــر ...</h1>
-                <p>الإتقان ليس في كثرة العمل، بل في صدق النية وجودة الأداء. من يعمل بضمير يترك أثراً لا يُمحى، قال تعالى: ﴿لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا﴾ ‏. ‏العبرة، بمعيار الجودة ‏والإحسان، ﻻبالكثرة والقلة !</p>
-                <div className="w-full max-w-[575px] rounded-[40px] bg-[#FBFBFB] border border-black/10 p-10 relative mx-auto mb-[50px] flex flex-col items-center justify-center">
-                    <Image src={logo} alt="Aakdi" className="mb-4 w-9 h-auto object-contain" />
+                <p>
+                    الإتقان ليس في كثرة العمل، بل في صدق النية وجودة الأداء. من يعمل بضمير يترك أثراً لا يُمحى، قال تعالى: ﴿لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا﴾ ‏. ‏العبرة، بمعيار الجودة ‏والإحسان، ﻻبالكثرة والقلة !
+                </p>
+
+                <div className="relative mx-auto mb-[50px] flex w-full max-w-[575px] flex-col items-center justify-center rounded-[40px] border border-black/10 bg-white p-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+                    <Image
+                        src={logo}
+                        alt="عقدي"
+                        width={36}
+                        height={36}
+                        className="absolute left-6 top-6 h-9 w-auto object-contain"
+                    />
+
                     <Image
                         src={user?.profile_image || defaultUser}
-                        alt="Aakdi"
+                        alt={user?.name ?? 'المستخدم'}
                         width={112}
                         height={112}
-                        className="w-[112px] h-[112px] object-cover rounded-full overflow-hidden mx-auto mb-[15px]"
+                        className="mb-[15px] h-[112px] w-[112px] rounded-full object-cover"
                     />
-                    <h3 className="text-[14px] font-bold text-black mb-[6px] text-center">{user?.name}</h3>
-                    <h4 className="text-[14px] font-normal text-[#4D4D4D] mb-[35px] text-center">{user?.role_relation?.name}</h4>
-                    <div className="flex flex-col items-center justify-items-center gap-[15px] mb-[35px]">
-                        <h2 className="text-[24px] font-semibold text-black mb-0">{time}</h2>
-                        <h5 className="text-[#363636] text-[14px] font-normal">{date}</h5>
+                    <h3 className="mb-[6px] text-center text-sm font-bold text-black">{user?.name}</h3>
+                    <p className="mb-[35px] text-center text-sm font-normal lowercase text-[#757575]">
+                        {roleLabel}
+                    </p>
+
+                    <div className="mb-[35px] flex flex-col items-center gap-[15px]">
+                        <p className="text-2xl font-semibold text-black">{time}</p>
+                        <p className="text-sm font-normal text-[#757575]">{date}</p>
                     </div>
-                    <div className="flex flex-col items-center justify-items-center gap-[25px] mb-[35px]">
-                        <Image src={waving} alt="Aakdi" className="w-[60px] h-auto object-contain" />
-                        <h6 className="text-[32px] font-semibold text-brand-hover mb-0">مرحبـــــاً بعودتـــك, {user?.name} !.</h6>
-                        <span className="text-lg font-normal text-[#363636]">{user?.role_relation?.name}</span>
+
+                    <div className="mb-[35px] flex flex-col items-center gap-[25px]">
+                        <Image
+                            src={waving}
+                            alt=""
+                            width={60}
+                            height={60}
+                            className="h-[60px] w-auto object-contain"
+                            aria-hidden
+                        />
+                        <h2 className="mb-0 text-center text-[32px] font-semibold leading-tight text-brand-hover">
+                            مرحباً بعودتك، {firstName} !.
+                        </h2>
+                        <span className="text-lg font-normal text-[#757575]">{roleLabel}</span>
                     </div>
-                    <button className="flex items-center gap-[10px] h-[58px] px-[18px] rounded-[29px] bg-brand-hover text-white text-[14px] font-semibold transition-all hover:bg-brand-main" onClick={() => { router.push('/home/analysis') }}>
-                        <i className='fa-solid fa-arrow-left'></i>
-                        <span>يلا بســم الله</span>
+
+                    <button
+                        type="button"
+                        className="flex h-[58px] items-center gap-3 rounded-full bg-black px-[18px] text-sm font-semibold text-white transition-colors hover:bg-[#1a1a1a]"
+                        onClick={() => router.push('/home/analysis')}
+                    >
+                        <span>ابدأ الآن</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white">
+                            <ArrowUpRight className="size-5 text-black" strokeWidth={2.5} />
+                        </span>
                     </button>
                 </div>
             </div>
         </>
     )
 }
-

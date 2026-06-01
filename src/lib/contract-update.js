@@ -106,10 +106,33 @@ function readValue(orderData, step, key) {
   return undefined;
 }
 
+export function parseTenantRoleIds(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => parseInt(String(v), 10))
+      .filter((n) => !Number.isNaN(n));
+  }
+  if (value === null || value === undefined || value === "") return [];
+  return String(value)
+    .split(/[,،]/)
+    .map((v) => parseInt(v.trim(), 10))
+    .filter((n) => !Number.isNaN(n));
+}
+
+function tenantRoleIdsEqual(a, b) {
+  const left = [...parseTenantRoleIds(a)].sort((x, y) => x - y);
+  const right = [...parseTenantRoleIds(b)].sort((x, y) => x - y);
+  return (
+    left.length === right.length && left.every((id, index) => id === right[index])
+  );
+}
+
 export function normalizeFieldValue(value, key) {
+  if (key === "tenant_role_ids") {
+    return parseTenantRoleIds(value);
+  }
   if (value === null || value === undefined) return "";
   if (Array.isArray(value)) {
-    if (key === "tenant_role_ids") return value.map(String).join(", ");
     return value;
   }
   if (typeof value === "boolean") return value ? 1 : 0;
@@ -138,11 +161,10 @@ export function buildContractUpdatePayload(step, form, initialForm) {
     if (value === "" && (initial === "" || initial === undefined)) continue;
 
     if (key === "tenant_role_ids") {
-      const ids = String(value)
-        .split(/[,،]/)
-        .map((v) => parseInt(v.trim(), 10))
-        .filter((n) => !Number.isNaN(n));
-      if (ids.length) payload[key] = ids;
+      const ids = parseTenantRoleIds(value);
+      if (!tenantRoleIdsEqual(ids, initial)) {
+        payload[key] = ids;
+      }
       continue;
     }
 

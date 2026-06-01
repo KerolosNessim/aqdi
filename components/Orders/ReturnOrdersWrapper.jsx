@@ -1,6 +1,7 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import greenRial from '@/public/images/greenRial.svg'
+import orangerial from '@/public/images/orangerial.svg'
 import Image from 'next/image'
 import waIcon from '@/public/images/waIcon.svg'
 import Link from 'next/link'
@@ -13,6 +14,60 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, ChevronLeft, Eye } from 'lucide-react'
 import ReturnOrderActionsMenu from './return-order-actions-menu'
 import ReturnRequestDialog from './return-request-dialog'
+import RefundContractActionsMenu from '@/components/analysis/returned/refund-contract-actions-menu'
+import {
+    buildRefundsLookup,
+    canManageAdminRefund,
+    getOrderAdminApprovalStatus,
+    isAdminRefundApproved,
+    isReturnContractOrder,
+    mapCreatedAtFilter,
+    resolveRefundForOrder,
+} from '@/components/analysis/returned/refund-contract-utils'
+
+function CustomerRefundBadge({ refunded }) {
+    if (refunded === true || refunded === 1) {
+        return (
+            <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#E6FFE6] text-[#10B981]">
+                ✅ تم المــوافقة
+            </span>
+        )
+    }
+    if (refunded === false || refunded === 0) {
+        return (
+            <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#FFE6E6] text-[#EF4444]">
+                ❌ لم تتم المــوافقة
+            </span>
+        )
+    }
+    return (
+        <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#FFF7E6] text-[#D97706]">
+            ⏳ بانتظار الاسترجاع
+        </span>
+    )
+}
+
+function AdminApprovalCell({ row }) {
+    if (!isReturnContractOrder(row)) {
+        return <span className="text-[13px] text-[#A3A3A3]">—</span>
+    }
+
+    const approved = isAdminRefundApproved(getOrderAdminApprovalStatus(row))
+
+    if (approved) {
+        return (
+            <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#E6FFE6] text-[#10B981]">
+                ✅ تم المــوافقة
+            </span>
+        )
+    }
+
+    return (
+        <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#FFE6E6] text-[#EF4444]">
+            ❌ لم تتم المــوافقة
+        </span>
+    )
+}
 
 export default function ReturnOrdersWrapper({ searchParams }) {
     
@@ -56,15 +111,14 @@ export default function ReturnOrdersWrapper({ searchParams }) {
 
     const tableHeaders = [
         "رقــم الطلب",
-        "العميل",
         "رقــم جوال العميل",
         "نــوع العقــد",
-        "نـوع الوثيقة",
         "الدفـــع",
-        "حــالة الطلب",
-        "مستلم منذ",
-        "الاسـتلام",
-        "الاجـــراءات"
+        "المبــلغ المطالــب اســترجاعه",
+        "تم الاستــرجــاع",
+        "رافــع الطلب",
+        "مــوافقة الادارة",
+        "عرض العقــد",
     ];
 
     function getReturnOrders(page = 1) {
@@ -80,31 +134,37 @@ export default function ReturnOrdersWrapper({ searchParams }) {
             .then(res => res.data);
     }
 
+    const createdAtFilter = mapCreatedAtFilter(
+        createdAtParam === 'day' ? 'day' : createdAtParam || 'total'
+    );
+
     const { data: responseData, isLoading, isError } = useQuery({
         queryKey: ['returnOrders', currentPage, createdAtParam, debouncedSearchQuery],
         queryFn: () => getReturnOrders(currentPage),
         enabled: isResolved,
     });
 
+    const { data: refundsResponse } = useQuery({
+        queryKey: ['refundContractsLookup', createdAtFilter],
+        queryFn: () =>
+            axiosInstance
+                .get(
+                    `/admin/analytics/refunds/contracts?created_at=${createdAtFilter}&page=1`
+                )
+                .then((res) => res.data),
+        enabled: isResolved,
+    });
+
     const rawData = responseData?.data;
     const items = rawData?.items ?? [];
     const pagination = rawData?.pagination;
+    const returnOrdersQueryKey = ['returnOrders', currentPage, createdAtParam, debouncedSearchQuery];
 
-    // Formatting date
-    const formatDate = (dateStr) => {
-        if (!dateStr) return "—";
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr;
-            return date.toLocaleDateString('ar-EG', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (e) {
-            return dateStr;
-        }
-    }
+    const refundsLookup = useMemo(() => {
+        const payload = refundsResponse?.data;
+        const refundItems = Array.isArray(payload) ? payload : (payload?.items ?? []);
+        return buildRefundsLookup(refundItems);
+    }, [refundsResponse]);
 
     const getPageTitle = () => {
         if (!createdAtParam) return "الطلبات المسترجعة";
@@ -165,52 +225,72 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                     </thead>
                     <tbody>
                         {items.length > 0 ? (
-                            items.map((row) => (
+                            items.map((row) => {
+                                const isHousing =
+                                    row.contract_type_key === 'housing' ||
+                                    row.contract_type === 'سكنـي' ||
+                                    row.contract_type === 'سكني'
+                                const refund = resolveRefundForOrder(row, refundsLookup)
+                                const showAdminApproval =
+                                    isReturnContractOrder(row) &&
+                                    refund &&
+                                    canManageAdminRefund(refund)
+                                const customerRefunded =
+                                    row.customer_refunded ??
+                                    row.is_refunded ??
+                                    row.refunded
+
+                                return (
                                 <tr
-                                    onClick={() => router.push(`/home/orders/${row.id}`)}
                                     key={row.id}
-                                    className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer"
+                                    className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all"
                                 >
                                     <td className="p-[15px_20px]">
                                         <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-[#f9f9f9] rounded-lg w-fit mx-auto border border-[#eee]">
                                             <span className="text-black text-[12px] font-bold">{row?.uuid}</span>
-                                            <button onClick={(e) => {
-                                                e.stopPropagation()
-                                                navigator.clipboard.writeText(row?.uuid)
-                                                toast.success('تم نسخ رقم الطلب')
-                                            }} className="text-[#A3A3A3] hover:text-brand-main">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(row?.uuid)
+                                                    toast.success('تم نسخ رقم الطلب')
+                                                }}
+                                                className="text-[#A3A3A3] hover:text-brand-main"
+                                            >
                                                 <i className="fa-regular fa-copy text-[11px]"></i>
                                             </button>
                                         </div>
-                                    </td>
-                                    <td className="p-[15px_20px] text-black text-[13px] font-semibold whitespace-nowrap">
-                                        {row?.user_name || "—"}
                                     </td>
                                     <td className="p-[15px_20px]">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-black text-[13px]">{row?.user_mobile}</span>
-                                            <button onClick={(e) => {
-                                                e.stopPropagation()
-                                                navigator.clipboard.writeText(row?.user_mobile)
-                                                toast.success('تم نسخ رقم الجوال')
-                                            }} className="text-[#A3A3A3] hover:text-brand-main">
-                                                <i className="fa-regular fa-copy text-[11px]"></i>
-                                            </button>
-                                            <Link onClick={(e) => {
-                                                e.stopPropagation()
-                                            }} href={`https://wa.me/${row?.user_mobile}`} target="_blank" className="hover:scale-110 transition-all">
-                                                <Image src={waIcon} alt="wa" width={16} height={16} />
-                                            </Link>
+                                            <span className="text-black text-[13px]" dir="ltr">
+                                                {row?.user_mobile || '—'}
+                                            </span>
+                                            {row?.user_mobile ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(row.user_mobile)
+                                                            toast.success('تم نسخ رقم الجوال')
+                                                        }}
+                                                        className="text-[#A3A3A3] hover:text-brand-main"
+                                                    >
+                                                        <i className="fa-regular fa-copy text-[11px]"></i>
+                                                    </button>
+                                                    <Link
+                                                        href={`https://wa.me/${row.user_mobile}`}
+                                                        target="_blank"
+                                                        className="hover:scale-110 transition-all"
+                                                    >
+                                                        <Image src={waIcon} alt="wa" width={16} height={16} />
+                                                    </Link>
+                                                </>
+                                            ) : null}
                                         </div>
                                     </td>
                                     <td className="p-[15px_20px]">
-                                        <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${row.contract_type_key === 'housing' || row.contract_type === 'سكنـي' || row.contract_type === 'سكني' ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
+                                        <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${isHousing ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
                                             {row?.contract_type}
-                                        </span>
-                                    </td>
-                                    <td className="p-[15px_20px]">
-                                        <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
-                                            {row?.instrument_type ?? "---"}
                                         </span>
                                     </td>
                                     <td className="p-[15px_20px]">
@@ -221,49 +301,68 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                                                 <i className="fa-solid fa-circle-check text-[12px]"></i>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-1.5 text-[#EF4444] font-bold text-[13px]">
-                                                <span>{row?.payment_label_ar || "لم يتم الدفع"}</span>
-                                                <i className="fa-solid fa-circle-xmark text-[12px]"></i>
-                                            </div>
+                                            <span className="text-[13px] font-bold text-[#EF4444]">
+                                                {row?.payment_label_ar || 'لم يتم الدفع'}
+                                            </span>
                                         )}
                                     </td>
                                     <td className="p-[15px_20px]">
-                                        <span
-                                            className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap text-red-700"
-                                            style={{ backgroundColor: row?.status?.color || "#f7e8e8" }}
-                                        >
-                                            {row?.status?.name || "استرجاع"}
+                                        <div className="flex items-center gap-1.5 text-brand-main font-bold text-[13px]">
+                                            <span>
+                                                {row?.refund_amount != null && row?.refund_amount !== ''
+                                                    ? row.refund_amount
+                                                    : '—'}
+                                            </span>
+                                            {row?.refund_amount != null && row?.refund_amount !== '' ? (
+                                                <Image src={orangerial} alt="rial" width={14} height={14} />
+                                            ) : null}
+                                        </div>
+                                    </td>
+                                    <td className="p-[15px_20px]">
+                                        <CustomerRefundBadge refunded={customerRefunded} />
+                                    </td>
+                                    <td className="p-[15px_20px]">
+                                        <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F0E6FF] text-[#7C3AED]">
+                                            {row?.employee_name || row?.accept_retrun_contract_employee?.name || '—'}
                                         </span>
                                     </td>
-                                    <td className="p-[15px_20px] text-[13px] text-[#A3A3A3] whitespace-nowrap">{formatDate(row?.created_at || row?.updated_at)}</td>
                                     <td className="p-[15px_20px]">
-                                        <span className="text-[13px] text-[#4D4D4D] font-medium">{row?.employee_name}</span>
+                                        <AdminApprovalCell row={row} />
                                     </td>
                                     <td className="p-[15px_20px]">
                                         <div
                                             className="flex items-center gap-2"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <ReturnOrderActionsMenu
-                                                order={row}
-                                                queryKey={['returnOrders']}
-                                                onReturnRequest={(order) => {
-                                                    setReturnDialogOrder(order)
-                                                    setReturnDialogOpen(true)
-                                                }}
-                                            />
+                                            {showAdminApproval ? (
+                                                <RefundContractActionsMenu
+                                                    refund={refund}
+                                                    queryKey={returnOrdersQueryKey}
+                                                />
+                                            ) : null}
+                                            {!isReturnContractOrder(row) ? (
+                                                <ReturnOrderActionsMenu
+                                                    order={row}
+                                                    queryKey={returnOrdersQueryKey}
+                                                    onReturnRequest={(order) => {
+                                                        setReturnDialogOrder(order)
+                                                        setReturnDialogOpen(true)
+                                                    }}
+                                                />
+                                            ) : null}
                                             <button
                                                 type="button"
                                                 onClick={() => router.push(`/home/orders/${row.id}`)}
                                                 className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all"
-                                                aria-label="عرض الطلب"
+                                                aria-label="عرض العقد"
                                             >
                                                 <Eye className="size-4" />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            ))
+                                )
+                            })
                         ) : (
                             <tr>
                                 <td colSpan={tableHeaders.length} className="text-center p-8 text-[#A3A3A3] text-sm">
@@ -279,7 +378,7 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                 open={returnDialogOpen}
                 onOpenChange={setReturnDialogOpen}
                 order={returnDialogOrder}
-                queryKey={['returnOrders', currentPage, createdAtParam, debouncedSearchQuery]}
+                queryKey={returnOrdersQueryKey}
             />
 
             {/* pagination controls */}

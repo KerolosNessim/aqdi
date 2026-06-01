@@ -126,7 +126,6 @@ export default function PropertyDetails({ data }) {
                   label="إرسال خطأ للعميل"
                   orderData={data}
                   context="propertyAddress"
-                  messageType="property"
                 />
               </div>
             </ContractStepEditor>
@@ -151,7 +150,6 @@ export default function PropertyDetails({ data }) {
                 label="إرسال خطأ للعميل"
                 orderData={data}
                 context="propertyDetails"
-                messageType="property"
               />
             </div>
           </ContractStepEditor>

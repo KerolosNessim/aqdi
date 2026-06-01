@@ -24,7 +24,7 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
     const pathname = usePathname();
     const showOrderMessages = isOrdersRelatedPath(pathname);
     const { user } = useUserStore();
-    const { setDisplayedPart, displayedPart, setOrderId } = useSidebarStore();
+    const { setDisplayedPart, displayedPart, setOrderId, isSidebarOpen, toggleSidebar, setSidebarOpen } = useSidebarStore();
     const { logout, logoutLoading } = useLogout();
     const { can } = usePermissions();
 
@@ -37,14 +37,20 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
         router.push(url);
     };
     return (
-        <div className="mb-7 max-w-[calc(100vw-305px)] max-[1200px]:max-w-[calc(100vw-60px)]">
+        <div className={`mb-7 transition-all duration-300 ${isSidebarOpen ? 'max-w-[calc(100vw-305px)] max-[1200px]:max-w-[calc(100vw-60px)]' : 'max-w-full'}`}>
         <div className={`grid items-center gap-3 ${showOrderMessages ? "grid-cols-[1fr_auto_1fr]" : "grid-cols-[1fr_auto]"}`}>
             <div className="flex items-center gap-2.5 min-w-0">
                 {
                     isMain ?
-                        <div className="w-[52px] h-[52px] rounded-full bg-brand-hover transition-all duration-300 flex items-center justify-center hover:bg-brand-main hover:scale-105">
-                            <Image src={mainPagesHeaderIcon} alt="Aakdi" className="w-4 h-auto object-contain" />
-                        </div> :
+                        <button
+                            type="button"
+                            onClick={toggleSidebar}
+                            aria-label={isSidebarOpen ? 'إغلاق القائمة الجانبية' : 'فتح القائمة الجانبية'}
+                            aria-expanded={isSidebarOpen}
+                            className="w-[52px] h-[52px] rounded-full bg-brand-hover transition-all duration-300 flex items-center justify-center hover:bg-brand-main hover:scale-105"
+                        >
+                            <Image src={mainPagesHeaderIcon} alt="" className="w-4 h-auto object-contain" />
+                        </button> :
                         <button className="w-[52px] h-[52px] rounded-full bg-[#F3F3F3] transition-all duration-300 flex items-center justify-center hover:bg-[#eee] hover:scale-105" onClick={() => { router.back() }}>
                             <i className="fa-solid fa-arrow-right"></i>
                         </button>
@@ -83,7 +89,7 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
             </div>
 
             {showOrderMessages ? (
-                <div className="justify-self-center max-[1100px]:hidden relative z-[60] pointer-events-auto">
+                <div className="justify-self-center max-[1100px]:hidden relative z-40 pointer-events-auto">
                     <OrderMessagesNav />
                 </div>
             ) : null}
@@ -96,6 +102,7 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
                             if (displayedPart === "comment") {
                                 setDisplayedPart("default");
                             } else {
+                                setSidebarOpen(true);
                                 setDisplayedPart("comment");
                             }
                         }} className={` ${displayedPart === "comment" ? "bg-brand-main" : " bg-[#F3F3F3]"} w-[52px] h-[52px] rounded-full transition-all duration-300 flex items-center justify-center hover:bg-[#eee] hover:scale-105`} aria-label="تعليقات الطلب"><i className="fa-regular fa-comments text-[18px] text-[#4D4D4D]"></i></button>
@@ -106,6 +113,7 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
                     if (displayedPart === "notification") {
                         setDisplayedPart("default");
                     } else {
+                        setSidebarOpen(true);
                         setDisplayedPart("notification");
                     }
                 }} className={` ${displayedPart === "notification" ? "bg-brand-main" : " bg-[#F3F3F3]"} w-[52px] h-[52px] rounded-full transition-all duration-300 flex items-center justify-center hover:bg-[#eee] hover:scale-105`}><Image src={notificationIcon} alt="Aakdi" className="w-[20px] h-auto object-contain" /></button>
@@ -167,7 +175,7 @@ export default function Header({orderId, isSingleOrder, page, title, isMain, fir
         </div>
 
         {showOrderMessages ? (
-            <div className="hidden max-[1100px]:flex justify-center mt-4 relative z-[60] pointer-events-auto">
+            <div className="hidden max-[1100px]:flex justify-center mt-4 relative z-40 pointer-events-auto">
                 <OrderMessagesNav />
             </div>
         ) : null}

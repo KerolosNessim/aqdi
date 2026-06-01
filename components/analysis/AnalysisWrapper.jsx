@@ -304,7 +304,7 @@ export default function Statistics() {
                 secondURL="/home/analysis"
             />
             <div
-                className="flex flex-col gap-2 min-h-screen w-full min-w-0 max-w-full -mx-[30px] max-[1700px]:-mx-[30px] px-[30px] py-6 bg-[#F8F9FA] rounded-tl-[24px]"
+                className="flex flex-col gap-2 min-h-screen w-full min-w-0 max-w-full  px-4 py-6  rounded-tl-[24px]"
                 dir="rtl"
             >
                 {controlPanel.length > 0 && (

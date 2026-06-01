@@ -12,7 +12,7 @@ import {
 } from "./order-message-utils";
 
 const pillClass =
-  "relative z-[60] flex items-center gap-3 bg-black rounded-full px-5 py-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.2)] pointer-events-auto";
+  "relative z-40 flex items-center gap-3 bg-black rounded-full px-5 py-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.2)] pointer-events-auto";
 
 const panelClass =
   "w-auto max-w-none rounded-[28px] border border-[#EBEBEB] bg-white p-3 shadow-[0_16px_48px_rgba(0,0,0,0.15)]";

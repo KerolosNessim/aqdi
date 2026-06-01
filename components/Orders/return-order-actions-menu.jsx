@@ -32,6 +32,7 @@ export default function ReturnOrderActionsMenu({
     order,
     queryKey = ["returnOrders"],
     onReturnRequest,
+    showReturnRequest = true,
 }) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const queryClient = useQueryClient();
@@ -73,18 +74,20 @@ export default function ReturnOrderActionsMenu({
                     className={menuContentClass}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <DropdownMenuItem
-                        className={`${itemBaseClass} hover:bg-[#F9F9F9] focus:bg-[#F9F9F9]`}
-                        onClick={handleReturnRequest}
-                    >
-                        <span className="text-[18px] leading-none shrink-0" aria-hidden>
-                            😩
-                        </span>
-                        <span className="flex-1 text-center text-[14px] font-medium text-black">
-                            طلب إسترجاع
-                        </span>
-                        <ChevronLeft className="size-3.5 shrink-0 text-[#0c6055]" strokeWidth={2.5} />
-                    </DropdownMenuItem>
+                    {showReturnRequest ? (
+                        <DropdownMenuItem
+                            className={`${itemBaseClass} hover:bg-[#F9F9F9] focus:bg-[#F9F9F9]`}
+                            onClick={handleReturnRequest}
+                        >
+                            <span className="text-[18px] leading-none shrink-0" aria-hidden>
+                                😩
+                            </span>
+                            <span className="flex-1 text-center text-[14px] font-medium text-black">
+                                طلب إسترجاع
+                            </span>
+                            <ChevronLeft className="size-3.5 shrink-0 text-[#0c6055]" strokeWidth={2.5} />
+                        </DropdownMenuItem>
+                    ) : null}
 
                     <DropdownMenuItem
                         className={`${itemBaseClass} hover:bg-[#FFF5F5] focus:bg-[#FFF5F5] text-[#E24444]`}

@@ -5,10 +5,12 @@ import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  composeOrderErrorMessage,
-  getAlertDialogTitle,
-  getOrderClientPhone,
-} from "./order-section-message-utils";
+  buildWhatsAppUrl,
+  composeSendErrorMessage,
+  getOrderPhoneForContext,
+  getSendErrorTitle,
+  getWhatsAppRecipientLabel,
+} from "./order-send-error-utils";
 
 function WhatsAppIcon({ className = "size-5" }) {
   return (
@@ -19,27 +21,19 @@ function WhatsAppIcon({ className = "size-5" }) {
   );
 }
 
-function normalizeWhatsAppPhone(phone) {
-  const digits = String(phone).replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("966")) return digits;
-  if (digits.startsWith("0")) return `966${digits.slice(1)}`;
-  if (digits.length === 9) return `966${digits}`;
-  return digits;
-}
-
 export default function OrderSectionErrorDialog({
   open,
   onOpenChange,
-  alert,
   orderData,
+  context,
 }) {
   const messageText = useMemo(
-    () => composeOrderErrorMessage(alert, orderData),
-    [alert, orderData]
+    () => composeSendErrorMessage(orderData, context),
+    [orderData, context]
   );
-  const phone = getOrderClientPhone(orderData);
-  const title = getAlertDialogTitle(alert);
+  const phone = getOrderPhoneForContext(orderData, context);
+  const title = getSendErrorTitle(context);
+  const recipientLabel = getWhatsAppRecipientLabel(context);
 
   const copyMessage = async () => {
     if (!messageText.trim()) {
@@ -66,12 +60,30 @@ export default function OrderSectionErrorDialog({
 
   const openWhatsApp = () => {
     if (!phone) {
-      toast.error("لا يوجد رقم جوال للعميل");
+      toast.error(
+        context === "agent"
+          ? "لا يوجد رقم جوال للوكيل"
+          : "لا يوجد رقم جوال للعميل"
+      );
+      return false;
+    }
+    const url = buildWhatsAppUrl(phone, messageText);
+    if (!url) {
+      toast.error("رقم الجوال غير صالح");
+      return false;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+    return true;
+  };
+
+  const handleConfirm = () => {
+    if (!messageText.trim()) {
+      toast.error("لا يوجد نص للرسالة");
       return;
     }
-    const normalizedPhone = normalizeWhatsAppPhone(phone);
-    const url = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(messageText)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (openWhatsApp()) {
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -82,6 +94,7 @@ export default function OrderSectionErrorDialog({
         className="sm:max-w-[560px] p-8 sm:p-10 rounded-[28px] border-0 shadow-[0_24px_48px_rgba(0,0,0,0.12)]"
       >
         <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[20px] font-bold text-black text-right">{title}</h2>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -90,7 +103,6 @@ export default function OrderSectionErrorDialog({
           >
             ✕
           </button>
-          <h2 className="text-[20px] font-bold text-black text-right">{title}</h2>
         </div>
 
         <div className="bg-[#F5F5F5] rounded-[20px] p-5 sm:p-6 mb-6 max-h-[min(50vh,360px)] overflow-y-auto">
@@ -104,9 +116,11 @@ export default function OrderSectionErrorDialog({
             <div className="inline-flex items-center gap-3 rounded-full bg-[#F3F3F3] px-4 py-2.5">
               <button
                 type="button"
-                onClick={openWhatsApp}
+                onClick={() => {
+                  if (openWhatsApp()) onOpenChange(false);
+                }}
                 className="text-[#25D366] hover:opacity-80 transition-opacity"
-                aria-label="إرسال واتساب"
+                aria-label={`إرسال واتساب لـ${recipientLabel}`}
               >
                 <WhatsAppIcon className="size-[22px]" />
               </button>
@@ -123,27 +137,32 @@ export default function OrderSectionErrorDialog({
               </span>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <p className="text-center text-[13px] text-[#E24444] mb-6">
+            {context === "agent"
+              ? "لا يوجد رقم جوال مسجل للوكيل"
+              : "لا يوجد رقم جوال مسجل للعميل"}
+          </p>
+        )}
 
         <div className="flex flex-col items-center gap-3">
           <button
             type="button"
-            onClick={copyMessage}
-            className="flex items-center justify-center gap-2 h-[48px] min-w-[140px] px-8 rounded-[14px] bg-[#1D4ED8] text-white text-[15px] font-bold hover:bg-[#1e40af] transition-colors shadow-[0_8px_20px_rgba(29,78,216,0.35)]"
+            onClick={handleConfirm}
+            disabled={!phone || !messageText.trim()}
+            className="flex items-center justify-center gap-2 h-[48px] min-w-[140px] px-8 rounded-[14px] bg-[#1D4ED8] text-white text-[15px] font-bold hover:bg-[#1e40af] transition-colors shadow-[0_8px_20px_rgba(29,78,216,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
-            <Copy className="size-4 shrink-0" strokeWidth={2.5} />
-            نسخ
+            <WhatsAppIcon className="size-[18px] shrink-0" />
+            موافق
           </button>
-          {phone ? (
-            <button
-              type="button"
-              onClick={openWhatsApp}
-              className="flex items-center justify-center gap-2 text-[14px] font-semibold text-[#25D366] hover:underline"
-            >
-              <WhatsAppIcon className="size-[18px]" />
-              إرسال للعميل عبر واتساب
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={copyMessage}
+            className="flex items-center justify-center gap-2 text-[14px] font-semibold text-[#737373] hover:text-black transition-colors"
+          >
+            <Copy className="size-4 shrink-0" />
+            نسخ الرسالة
+          </button>
         </div>
       </DialogContent>
     </Dialog>

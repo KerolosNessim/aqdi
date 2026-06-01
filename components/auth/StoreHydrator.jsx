@@ -9,12 +9,21 @@ export default function StoreHydrator() {
       useUserStore.setState({ _hasHydrated: true });
     };
 
+    const unsubFinish = useUserStore.persist.onFinishHydration(finishHydration);
+
     if (useUserStore.persist.hasHydrated()) {
       finishHydration();
-      return;
+      return unsubFinish;
     }
 
-    return useUserStore.persist.onFinishHydration(finishHydration);
+    void Promise.resolve(useUserStore.persist.rehydrate()).finally(finishHydration);
+
+    const safetyTimer = setTimeout(finishHydration, 1500);
+
+    return () => {
+      unsubFinish();
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   return null;

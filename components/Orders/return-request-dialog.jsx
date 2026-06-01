@@ -73,23 +73,23 @@ export default function ReturnRequestDialog({
         }
     }, [open]);
 
+    const contractId = order?.contract_id ?? order?.id;
+
     const { mutate: submitReturn, isPending } = useMutation({
         mutationFn: () =>
-            axiosInstance.post(`/admin/orders/${order?.id}/refund`, {
+            axiosInstance.post("/admin/refundable-contracts", {
+                contract_id: contractId,
                 draft_contract_number: draftNumber.trim(),
-                refund_amount: refundAmount.trim(),
+                refund_amount: Number(refundAmount),
                 notes: notes.trim() || null,
             }),
         onSuccess: (res) => {
             toast.success(res?.data?.message || "تم رفع طلب الاسترجاع بنجاح");
+            queryClient.invalidateQueries({ queryKey: ["refundContractsLookup"] });
+            queryClient.invalidateQueries({ queryKey: ["refundContracts"] });
             setStep(2);
         },
         onError: (error) => {
-            const status = error?.response?.status;
-            if (status === 404 || status === 405) {
-                setStep(2);
-                return;
-            }
             toast.error(error?.response?.data?.message || "حدث خطأ أثناء إرسال طلب الاسترجاع");
         },
     });
@@ -99,8 +99,17 @@ export default function ReturnRequestDialog({
     };
 
     const handleSubmit = () => {
+        if (!contractId) {
+            toast.error("تعذر تحديد العقد المرتبط بالطلب");
+            return;
+        }
         if (!draftNumber.trim() || !refundAmount.trim()) {
             toast.error("يرجى ملء جميع الحقول المطلوبة");
+            return;
+        }
+        const amount = Number(refundAmount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            toast.error("يرجى إدخال قيمة مبلغ مسترجع صحيحة");
             return;
         }
         submitReturn();
@@ -248,7 +257,9 @@ export default function ReturnRequestDialog({
                                         <span className="text-[#FF4D4F] mr-1">*</span>
                                     </label>
                                     <input
-                                        type="text"
+                                        type="number"
+                                        min="0"
+                                        step="any"
                                         className={inputClass}
                                         placeholder="أدخل قيمة المبلغ المسترجع ..."
                                         value={refundAmount}

@@ -104,6 +104,7 @@ export const ROUTE_SECTION_RULES = [
   { prefix: '/home/Properties-analysis', section: PERMISSION_SECTIONS.analytics },
   { prefix: '/home/Units-analysis', section: PERMISSION_SECTIONS.analytics },
   { prefix: '/home/user-analysis', section: PERMISSION_SECTIONS.analytics },
+  { prefix: '/home/users', section: PERMISSION_SECTIONS.analytics },
   { prefix: '/home/orders-analysis', section: PERMISSION_SECTIONS.analytics },
   { prefix: '/home/return-analysis', section: PERMISSION_SECTIONS.analytics },
   { prefix: '/home/real-estates', section: PERMISSION_SECTIONS.analytics },

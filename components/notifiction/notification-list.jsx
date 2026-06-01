@@ -1,31 +1,37 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import NotifictionCard from './notifiction-card'
-import { Clock, Hand, Loader2, X } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { LuTimerReset } from 'react-icons/lu'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { axiosInstance } from '@/src/utils/axios'
 import { useSidebarStore } from '@/src/stores/sidebar-store'
 import { Button } from '../ui/button'
+import OrdersPagination from '../Orders/shared/orders-pagination'
 
 export default function NotificationList() {
-  const {  setDisplayedPart } = useSidebarStore();
+  const { setDisplayedPart } = useSidebarStore();
+  const [currentPage, setCurrentPage] = useState(1);
+
   function getUnreceivedOrders() {
-    return axiosInstance.get('/admin/orders?is_received=false&per_page=100')
+    return axiosInstance
+      .get(`/admin/orders?is_received=false&per_page=100&page=${currentPage}`)
       .then((res) => res?.data)
       .catch((err) => {
         throw err;
-      })
+      });
   }
-  const { data, isLoading } = useQuery({
-    queryKey: ['unReceivedOrders'],
-    queryFn: getUnreceivedOrders
-  })
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['unReceivedOrders', currentPage],
+    queryFn: getUnreceivedOrders,
+    placeholderData: keepPreviousData,
+  });
 
   const responseData = data?.data;
   const unreceivedOrders = responseData?.items ?? (Array.isArray(responseData) ? responseData : []);
-  const totalCount = responseData?.pagination?.total ?? unreceivedOrders.length;
-
+  const pagination = responseData?.pagination;
+  const totalCount = pagination?.total ?? unreceivedOrders.length;
 
 
   return (
@@ -54,9 +60,19 @@ export default function NotificationList() {
 
           </p>
         </div>
-        {unreceivedOrders.map((order) => (
-          <NotifictionCard key={order?.id} order={order} />
-        ))}
+        <div
+          className={`flex flex-col gap-4 ${isFetching && !isLoading ? 'opacity-60 pointer-events-none transition-opacity' : ''}`}
+        >
+          {unreceivedOrders.map((order) => (
+            <NotifictionCard key={order?.id} order={order} />
+          ))}
+        </div>
+
+        <OrdersPagination
+          pagination={pagination}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
   )
 }

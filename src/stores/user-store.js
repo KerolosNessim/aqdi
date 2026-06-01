@@ -44,8 +44,9 @@ export const useUserStore = create(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (typeof window !== 'undefined') {
+      skipHydration: true,
+      onRehydrateStorage: () => (state, error) => {
+        if (!error && typeof window !== 'undefined') {
           const storedToken = localStorage.getItem('token');
           if (storedToken && !state?.token) {
             useUserStore.setState({ token: storedToken, isAuthenticated: true });

@@ -64,7 +64,6 @@ export const STEP3_TENANT_FIELDS = [
   { key: "tenant_mobile", label: "جوال المستأجر", type: "text" },
   { key: "tenant_name", label: "اسم المستأجر", type: "text" },
   { key: "tenant_email", label: "البريد الإلكتروني", type: "text" },
-  { key: "tenant_role_ids", label: "معرفات الصلاحيات (مفصولة بفاصلة)", type: "text", colSpan: 2 },
 ];
 
 export const STEP3_CONTRACT_META_FIELDS = [

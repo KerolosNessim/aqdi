@@ -24,7 +24,11 @@ export function usePermissions() {
   const shouldFetchRole =
     !!user?.role_id && storedPermissions.length === 0 && !isSuperAdmin(user, storedPermissions);
 
-  const { data: rolePermissionsData, isLoading: rolePermissionsLoading } = useQuery({
+  const {
+    data: rolePermissionsData,
+    isLoading: rolePermissionsLoading,
+    isError: rolePermissionsError,
+  } = useQuery({
     queryKey: ['my-role-permissions', user?.role_id],
     queryFn: async () => {
       const res = await axiosInstance.get(`/admin/roles/${user.role_id}`);
@@ -59,7 +63,8 @@ export function usePermissions() {
   }, [user, rolePermissionsData]);
 
   const isReady = hasHydrated;
-  const isPermissionsLoading = shouldFetchRole && rolePermissionsLoading;
+  const isPermissionsLoading =
+    shouldFetchRole && rolePermissionsLoading && !rolePermissionsError;
 
   const can = useCallback(
     (section, action = 'view') => canAccess(permissions, user, section, action),

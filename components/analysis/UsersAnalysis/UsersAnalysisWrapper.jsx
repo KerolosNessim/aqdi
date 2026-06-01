@@ -8,19 +8,21 @@ import Link from 'next/link'
 import { Switch } from "@/components/ui/switch"
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { axiosInstance } from '@/src/utils/axios'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Loader from '../../home/loader'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { ChevronRight, ChevronLeft, FolderX, FolderCheck, Loader2, X } from 'lucide-react'
 
 export default function UsersAnalysisWrapper({ id }) {
     const [title, setTitle] = useState('')
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
     const [suspendModalOpen, setSuspendModalOpen] = useState(false)
     const [selectedUserId, setSelectedUserId] = useState(null)
+    const [suspendAction, setSuspendAction] = useState('block')
     const [currentPage, setCurrentPage] = useState(1)
-    const [localStatuses, setLocalStatuses] = useState({})
+    const [togglingUserId, setTogglingUserId] = useState(null)
+    const queryClient = useQueryClient()
 
     useEffect(() => {
         switch (id) {
@@ -133,14 +135,38 @@ export default function UsersAnalysisWrapper({ id }) {
             total: usersList.length
           };
 
-    // Handler for status change
-    const handleStatusChange = (userId, newStatus) => {
-        setLocalStatuses(prev => ({
-            ...prev,
-            [userId]: newStatus
-        }));
-        toast.success(newStatus ? 'تم تفعيل حساب المستخدم بنجاح' : 'تم إلغاء تفعيل حساب المستخدم بنجاح');
-    }
+    const { mutate: toggleUserBlock, isPending: isTogglingBlock } = useMutation({
+        mutationFn: ({ userId }) => axiosInstance.post(`/admin/users/${userId}/block`),
+        onSuccess: (res) => {
+            toast.success(res?.data?.message || 'تم تحديث حالة المستخدم بنجاح');
+            queryClient.invalidateQueries({ queryKey: ['usersAnalysis'] });
+        },
+        onError: (error) => {
+            toast.error(error?.response?.data?.message || 'حدث خطأ أثناء تحديث حالة المستخدم');
+        },
+        onSettled: () => setTogglingUserId(null),
+    });
+
+    const { mutate: deleteUser, isPending: isDeletingUser } = useMutation({
+        mutationFn: ({ userId }) => axiosInstance.post(`/admin/users/${userId}/delete`),
+        onSuccess: (res) => {
+            toast.success(res?.data?.message || 'تم حذف المستخدم بنجاح');
+            queryClient.invalidateQueries({ queryKey: ['usersAnalysis'] });
+            setDeleteModalOpen(false);
+            setSelectedUserId(null);
+        },
+        onError: (error) => {
+            toast.error(error?.response?.data?.message || 'حدث خطأ أثناء حذف المستخدم');
+        },
+    });
+
+    const getUserIsActive = (row) =>
+        row.is_blocked != null ? !row.is_blocked : Boolean(row.status);
+
+    const handleStatusChange = (userId) => {
+        setTogglingUserId(userId);
+        toggleUserBlock({ userId });
+    };
 
     // Handler for opening delete modal
     const handleDeleteClick = (userId) => {
@@ -148,26 +174,29 @@ export default function UsersAnalysisWrapper({ id }) {
         setDeleteModalOpen(true)
     }
 
-    // Handler for opening suspend modal
-    const handleSuspendClick = (userId) => {
-        setSelectedUserId(userId)
+    const handleSuspendClick = (row) => {
+        const isActive = getUserIsActive(row)
+        setSelectedUserId(row.id)
+        setSuspendAction(isActive ? 'block' : 'unblock')
         setSuspendModalOpen(true)
     }
 
-    // Handler for confirming delete
     const confirmDelete = () => {
-        console.log(`Deleting user ${selectedUserId}`)
-        toast.success('تم حذف المستخدم بنجاح')
-        setDeleteModalOpen(false)
-        setSelectedUserId(null)
-    }
+        if (!selectedUserId) return;
+        deleteUser({ userId: selectedUserId });
+    };
 
-    // Handler for confirming suspend
     const confirmSuspend = () => {
-        console.log(`Suspending user ${selectedUserId}`)
-        toast.success('تم إيقاف المستخدم بنجاح')
-        setSuspendModalOpen(false)
-        setSelectedUserId(null)
+        if (!selectedUserId) return
+        toggleUserBlock(
+            { userId: selectedUserId },
+            {
+                onSuccess: () => {
+                    setSuspendModalOpen(false)
+                    setSelectedUserId(null)
+                },
+            }
+        )
     }
 
     if (isLoading) return <Loader />
@@ -191,7 +220,7 @@ export default function UsersAnalysisWrapper({ id }) {
                     <tbody>
                         {displayedUsers && displayedUsers.length > 0 ? (
                             displayedUsers.map((row) => {
-                                const isChecked = localStatuses[row.id] !== undefined ? localStatuses[row.id] : row.status;
+                                const isChecked = getUserIsActive(row);
                                 return (
                                     <tr key={row.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
                                         <td className="p-[15px_20px] text-black text-[13px] font-medium whitespace-nowrap">{row.name || row.full_name}</td>
@@ -218,7 +247,8 @@ export default function UsersAnalysisWrapper({ id }) {
                                             <div className="flex items-center justify-center pointer-events-auto" style={{ direction: "ltr" }}>
                                                 <Switch
                                                     checked={isChecked}
-                                                    onCheckedChange={(checked) => handleStatusChange(row.id, checked)}
+                                                    disabled={togglingUserId === row.id}
+                                                    onCheckedChange={() => handleStatusChange(row.id)}
                                                 />
                                             </div>
                                         </td>
@@ -268,22 +298,24 @@ export default function UsersAnalysisWrapper({ id }) {
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="w-56">
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <i className="fa-regular fa-eye ml-2 text-[#A3A3A3]"></i>
-                                                        <span>عرض المستخدم</span>
-                                                        <i className="fa-solid fa-chevron-left mr-auto text-[10px] text-[#A3A3A3]"></i>
+                                                    <DropdownMenuItem className="cursor-pointer p-0" asChild>
+                                                        <Link
+                                                            href={`/home/users/${row.id}?from=${encodeURIComponent(`/home/user-analysis/${id}`)}`}
+                                                            className="flex items-center w-full px-2 py-1.5 cursor-pointer"
+                                                        >
+                                                            <i className="fa-regular fa-eye ml-2 text-[#A3A3A3]"></i>
+                                                            <span>عرض المستخدم</span>
+                                                            <i className="fa-solid fa-chevron-left mr-auto text-[10px] text-[#A3A3A3]"></i>
+                                                        </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="cursor-pointer" onClick={() => handleSuspendClick(row.id)}>
-                                                        <i className="fa-solid fa-ban ml-2 text-[#A3A3A3]"></i>
-                                                        <span>إيقاف المستخدم</span>
+                                                    <DropdownMenuItem
+                                                        className="cursor-pointer"
+                                                        onClick={() => handleSuspendClick(row)}
+                                                    >
+                                                        <i className={`fa-solid ${isChecked ? 'fa-ban' : 'fa-circle-check'} ml-2 text-[#A3A3A3]`}></i>
+                                                        <span>{isChecked ? 'إيقاف المستخدم' : 'تفعيل المستخدم'}</span>
                                                         <i className="fa-solid fa-chevron-left mr-auto text-[10px] text-[#A3A3A3]"></i>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="cursor-pointer text-green-600">
-                                                        <i className="fa-solid fa-circle-check ml-2"></i>
-                                                        <span>قبول المستخدم</span>
-                                                        <i className="fa-solid fa-chevron-left mr-auto text-[10px] text-green-300"></i>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => handleDeleteClick(row.id)}>
@@ -373,39 +405,77 @@ export default function UsersAnalysisWrapper({ id }) {
                 </div>
             )}
 
-            {/* Suspend User Modal */}
+            {/* Block / Unblock User Modal */}
             <Dialog open={suspendModalOpen} onOpenChange={setSuspendModalOpen}>
-                <DialogContent className="max-w-[500px] rounded-[32px] p-0 overflow-hidden border-none shadow-2xl bg-white">
-                    <div className="p-10 flex flex-col items-center">
+                <DialogContent
+                    closeButton={false}
+                    className="max-w-[520px] rounded-[24px] p-0 overflow-hidden border border-[#F0F0F0] shadow-2xl bg-white gap-0"
+                    dir="rtl"
+                >
+                    <div className="flex items-center justify-between px-6 py-5 border-b border-[#F0F0F0]">
+                        <DialogTitle className="text-[18px] font-bold text-black m-0">
+                            {suspendAction === 'block' ? 'إيقاف حساب' : 'تفعيل حساب'}
+                        </DialogTitle>
                         <button
-                            className="absolute top-6 left-6 w-10 h-10 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-[#eee] transition-all"
+                            type="button"
+                            className="text-[#4D4D4D] hover:opacity-70 transition-opacity"
                             onClick={() => setSuspendModalOpen(false)}
+                            disabled={isTogglingBlock}
+                            aria-label="إغلاق"
                         >
-                            <i className="fa-solid fa-xmark"></i>
+                            <X className="size-5" />
                         </button>
-                        <div className="w-24 h-24 rounded-full bg-brand-main flex items-center justify-center text-white text-[40px] mb-8 shadow-lg shadow-brand-main/20">
-                            <i className="fa-solid fa-ban"></i>
+                    </div>
+
+                    <div className="px-6 py-10 flex flex-col items-center text-center">
+                        <div
+                            className={`w-[88px] h-[88px] rounded-full flex items-center justify-center mb-8 ${
+                                suspendAction === 'block' ? 'bg-brand-hover' : 'bg-green-600'
+                            }`}
+                        >
+                            {suspendAction === 'block' ? (
+                                <FolderX className="size-8 text-white stroke-[1.5]" />
+                            ) : (
+                                <FolderCheck className="size-8 text-white stroke-[1.5]" />
+                            )}
                         </div>
-                        <h3 className="text-[22px] font-bold text-black text-center mb-3">
-                            هل أنت متأكد من <span className="text-brand-main">إيقـاف</span> حساب الضيف !
+                        <h3 className="text-[20px] font-bold text-black mb-3 leading-relaxed">
+                            {suspendAction === 'block' ? (
+                                <>هل أنت متأكد من <span className="text-brand-hover">إيقاف</span> حساب الضيف !</>
+                            ) : (
+                                <>هل أنت متأكد من <span className="text-green-600">تفعيل</span> حساب الضيف !</>
+                            )}
                         </h3>
-                        <p className="text-[14px] text-[#A3A3A3] text-center mb-10">
+                        <p className="text-[14px] text-[#A3A3A3] font-medium">
                             هذا الإجراء يمكن التراجع عنه بعد التأكيد !
                         </p>
-                        <div className="flex gap-4 w-full">
-                            <button
-                                className="flex-1 h-[56px] rounded-full bg-[#F5F5F5] text-[#4D4D4D] font-bold text-[16px] hover:bg-[#eee] transition-all"
-                                onClick={() => setSuspendModalOpen(false)}
-                            >
-                                إلغاء
-                            </button>
-                            <button
-                                className="flex-1 h-[56px] rounded-full bg-brand-main text-white font-bold text-[16px] hover:opacity-90 transition-all shadow-lg shadow-brand-main/20"
-                                onClick={confirmSuspend}
-                            >
-                                تأكيد الإيقاف
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="flex gap-3 px-6 pb-6">
+                        <button
+                            type="button"
+                            className={`flex-1 h-[52px] rounded-full text-white font-bold text-[16px] hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center ${
+                                suspendAction === 'block' ? 'bg-brand-hover' : 'bg-green-600'
+                            }`}
+                            onClick={confirmSuspend}
+                            disabled={isTogglingBlock}
+                        >
+                            {isTogglingBlock ? (
+                                <Loader2 className="size-6 animate-spin" />
+                            ) : suspendAction === 'block' ? (
+                                'تأكيد الإيقاف'
+                            ) : (
+                                'تأكيد التفعيل'
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className="flex-1 h-[52px] rounded-full bg-[#F5F5F5] text-[#4D4D4D] font-bold text-[16px] hover:bg-[#EEEEEE] transition-all disabled:opacity-50"
+                            onClick={() => setSuspendModalOpen(false)}
+                            disabled={isTogglingBlock}
+                        >
+                            إلغاء
+                        </button>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -431,16 +501,24 @@ export default function UsersAnalysisWrapper({ id }) {
                         </p>
                         <div className="flex gap-4 w-full">
                             <button
-                                className="flex-1 h-[56px] rounded-full bg-[#F5F5F5] text-[#4D4D4D] font-bold text-[16px] hover:bg-[#eee] transition-all"
+                                type="button"
+                                className="flex-1 h-[56px] rounded-full bg-[#F5F5F5] text-[#4D4D4D] font-bold text-[16px] hover:bg-[#eee] transition-all disabled:opacity-50"
                                 onClick={() => setDeleteModalOpen(false)}
+                                disabled={isDeletingUser}
                             >
                                 إلغاء
                             </button>
                             <button
-                                className="flex-1 h-[56px] rounded-full bg-[#EF4444] text-white font-bold text-[16px] hover:bg-[#dc2626] transition-all shadow-lg shadow-[#EF4444]/20"
+                                type="button"
+                                className="flex-1 h-[56px] rounded-full bg-[#EF4444] text-white font-bold text-[16px] hover:bg-[#dc2626] transition-all shadow-lg shadow-[#EF4444]/20 disabled:opacity-50 flex items-center justify-center"
                                 onClick={confirmDelete}
+                                disabled={isDeletingUser}
                             >
-                                تأكيد الحذف
+                                {isDeletingUser ? (
+                                    <Loader2 className="size-6 animate-spin" />
+                                ) : (
+                                    'تأكيد الحذف'
+                                )}
                             </button>
                         </div>
                     </div>
