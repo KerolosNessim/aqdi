@@ -9,6 +9,8 @@ import Loader from '@/components/home/loader';
 import { axiosInstance } from '@/src/utils/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import PermissionGate from '@/components/auth/PermissionGate';
+import { PERMISSION_SECTIONS } from '@/src/lib/permissions';
 
 export default function Roles() {
     const [currentPage, setCurrentPage] = useState(1);
@@ -100,9 +102,11 @@ export default function Roles() {
             <div className="flex flex-col gap-6 bg-white rounded-[32px] border border-[#F0F0F0] p-8 mt-4 shadow-sm relative z-10">
                 <div className="flex items-center justify-between pb-6 border-b border-[#F5F5F5]">
                     <h2 className="text-[20px] font-black text-black">إدارة الأدوار</h2>
-                    <Link href="/home/roles/add" className="flex items-center gap-2 px-6 py-3 bg-brand-main text-white rounded-full font-bold text-[14px] hover:bg-brand-main/90 transition-all shadow-lg shadow-brand-main/20">
-                        <span>+ إضافة دور جديد</span>
-                    </Link>
+                    <PermissionGate section={PERMISSION_SECTIONS.roles} action="create">
+                        <Link href="/home/roles/add" className="flex items-center gap-2 px-6 py-3 bg-brand-main text-white rounded-full font-bold text-[14px] hover:bg-brand-main/90 transition-all shadow-lg shadow-brand-main/20">
+                            <span>+ إضافة دور جديد</span>
+                        </Link>
+                    </PermissionGate>
                 </div>
 
                 <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] shadow-inner mt-4">
@@ -164,18 +168,22 @@ export default function Roles() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center justify-center gap-3">
-                                                    <Link
-                                                        href={`/home/roles/edit?id=${role.id}`}
-                                                        className="w-10 h-10 rounded-full bg-[#E6FFE6] text-[#10B981] flex justify-center items-center hover:bg-[#10B981] hover:text-white transition-all shadow-sm"
-                                                    >
-                                                        <i className="fa-solid fa-pen-to-square text-[14px]"></i>
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(role)}
-                                                        className="w-10 h-10 rounded-full bg-[#FFEBEB] text-[#FF4D4F] flex justify-center items-center hover:bg-[#FF4D4F] hover:text-white transition-all shadow-sm"
-                                                    >
-                                                        <i className="fa-solid fa-trash text-[14px]"></i>
-                                                    </button>
+                                                    <PermissionGate section={PERMISSION_SECTIONS.roles} action="edit">
+                                                        <Link
+                                                            href={`/home/roles/edit?id=${role.id}`}
+                                                            className="w-10 h-10 rounded-full bg-[#E6FFE6] text-[#10B981] flex justify-center items-center hover:bg-[#10B981] hover:text-white transition-all shadow-sm"
+                                                        >
+                                                            <i className="fa-solid fa-pen-to-square text-[14px]"></i>
+                                                        </Link>
+                                                    </PermissionGate>
+                                                    <PermissionGate section={PERMISSION_SECTIONS.roles} action="delete">
+                                                        <button
+                                                            onClick={() => handleDelete(role)}
+                                                            className="w-10 h-10 rounded-full bg-[#FFEBEB] text-[#FF4D4F] flex justify-center items-center hover:bg-[#FF4D4F] hover:text-white transition-all shadow-sm"
+                                                        >
+                                                            <i className="fa-solid fa-trash text-[14px]"></i>
+                                                        </button>
+                                                    </PermissionGate>
                                                 </div>
                                             </td>
                                         </tr>

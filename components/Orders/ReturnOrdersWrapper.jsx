@@ -10,7 +10,9 @@ import { axiosInstance } from '@/src/utils/axios'
 import { useQuery } from '@tanstack/react-query'
 import Loader from '../home/loader'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Eye } from 'lucide-react'
+import ReturnOrderActionsMenu from './return-order-actions-menu'
+import ReturnRequestDialog from './return-request-dialog'
 
 export default function ReturnOrdersWrapper({ searchParams }) {
     
@@ -20,6 +22,8 @@ export default function ReturnOrdersWrapper({ searchParams }) {
     const [resolvedParams, setResolvedParams] = useState(null)
     const [isResolved, setIsResolved] = useState(false)
     const router = useRouter()
+    const [returnDialogOpen, setReturnDialogOpen] = useState(false)
+    const [returnDialogOrder, setReturnDialogOrder] = useState(null)
 
     React.useEffect(() => {
         const handler = setTimeout(() => {
@@ -45,6 +49,10 @@ export default function ReturnOrdersWrapper({ searchParams }) {
     }, [searchParams])
 
     const createdAtParam = resolvedParams?.created_at || null;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearchQuery, createdAtParam]);
 
     const tableHeaders = [
         "رقــم الطلب",
@@ -79,22 +87,8 @@ export default function ReturnOrdersWrapper({ searchParams }) {
     });
 
     const rawData = responseData?.data;
-    const items = rawData?.items || [];
+    const items = rawData?.items ?? [];
     const pagination = rawData?.pagination;
-
-    // Filter items based on local search query
-    const filteredItems = items.filter(row => {
-        if (!debouncedSearchQuery) return true;
-        const query = debouncedSearchQuery.toLowerCase();
-        return (
-            row.uuid?.toString().toLowerCase().includes(query) ||
-            row.user_mobile?.toString().toLowerCase().includes(query) ||
-            row.user_name?.toLowerCase().includes(query) ||
-            row.contract_type?.toLowerCase().includes(query) ||
-            row.employee_name?.toLowerCase().includes(query) ||
-            row.instrument_type?.toLowerCase().includes(query)
-        );
-    });
 
     // Formatting date
     const formatDate = (dateStr) => {
@@ -170,8 +164,8 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredItems && filteredItems.length > 0 ? (
-                            filteredItems.map((row) => (
+                        {items.length > 0 ? (
+                            items.map((row) => (
                                 <tr
                                     onClick={() => router.push(`/home/orders/${row.id}`)}
                                     key={row.id}
@@ -210,12 +204,12 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                                         </div>
                                     </td>
                                     <td className="p-[15px_20px]">
-                                        <span className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${row.contract_type_key === 'housing' || row.contract_type === 'سكنـي' || row.contract_type === 'سكني' ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
+                                        <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${row.contract_type_key === 'housing' || row.contract_type === 'سكنـي' || row.contract_type === 'سكني' ? 'bg-[#F0E6FF] text-[#7C3AED]' : 'bg-[#FFE6F0] text-[#EC4899]'}`}>
                                             {row?.contract_type}
                                         </span>
                                     </td>
                                     <td className="p-[15px_20px]">
-                                        <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
+                                        <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
                                             {row?.instrument_type ?? "---"}
                                         </span>
                                     </td>
@@ -235,7 +229,7 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                                     </td>
                                     <td className="p-[15px_20px]">
                                         <span
-                                            className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap text-red-700"
+                                            className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap text-red-700"
                                             style={{ backgroundColor: row?.status?.color || "#f7e8e8" }}
                                         >
                                             {row?.status?.name || "استرجاع"}
@@ -246,9 +240,25 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                                         <span className="text-[13px] text-[#4D4D4D] font-medium">{row?.employee_name}</span>
                                     </td>
                                     <td className="p-[15px_20px]">
-                                        <div className='flex items-center gap-2'>
-                                            <button onClick={(e) => { e.stopPropagation(); router.push(`/home/orders/${row.id}`) }} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all">
-                                                👁️
+                                        <div
+                                            className="flex items-center gap-2"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <ReturnOrderActionsMenu
+                                                order={row}
+                                                queryKey={['returnOrders']}
+                                                onReturnRequest={(order) => {
+                                                    setReturnDialogOrder(order)
+                                                    setReturnDialogOpen(true)
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => router.push(`/home/orders/${row.id}`)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all"
+                                                aria-label="عرض الطلب"
+                                            >
+                                                <Eye className="size-4" />
                                             </button>
                                         </div>
                                     </td>
@@ -264,6 +274,13 @@ export default function ReturnOrdersWrapper({ searchParams }) {
                     </tbody>
                 </table>
             </div>
+
+            <ReturnRequestDialog
+                open={returnDialogOpen}
+                onOpenChange={setReturnDialogOpen}
+                order={returnDialogOrder}
+                queryKey={['returnOrders', currentPage, createdAtParam, debouncedSearchQuery]}
+            />
 
             {/* pagination controls */}
             {pagination && pagination.last_page > 1 && (

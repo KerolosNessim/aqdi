@@ -12,8 +12,10 @@ import { axiosInstance } from '@/src/utils/axios'
 import { useQuery } from '@tanstack/react-query'
 import Loader from '../../home/loader'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function PropertiesAnalysisWrapper({ id }) {
+    const router = useRouter()
     const [title, setTitle] = useState('')
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
     const [suspendModalOpen, setSuspendModalOpen] = useState(false)
@@ -134,15 +136,23 @@ export default function PropertiesAnalysisWrapper({ id }) {
                     <tbody>
                         {displayedProperties && displayedProperties.length > 0 ? (
                             displayedProperties.map((row) => (
-                                <tr key={row.id} className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all">
-                                    <td className="p-[15px_20px] text-black text-[13px] font-medium">{row.name_real_estate || row.name_owner || `عقار #${row.id}`}</td>
+                                <tr
+                                    key={row.id}
+                                    onClick={() => router.push(`/home/real-estates/${row.id}`)}
+                                    className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer"
+                                >
+                                    <td className="p-[15px_20px] text-black text-[13px] font-medium">
+                                        {row.name_real_estate || row.name_owner || `عقار #${row.id}`}
+                                    </td>
                                     <td className="p-[15px_20px] text-[#616161] text-[13px]">{"—"}</td>
-                                    <td className="p-[15px_20px]">
+                                    <td className="p-[15px_20px]" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-black text-[13px]">{row.mobile || "—"}</span>
                                             {row.mobile && (
                                                 <>
-                                                    <button onClick={() => {
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
                                                         navigator.clipboard.writeText(row.mobile)
                                                         toast.success('تم نسخ رقم الهاتف')
                                                     }} className="text-[#A3A3A3] hover:text-brand-main">
@@ -181,7 +191,6 @@ export default function PropertiesAnalysisWrapper({ id }) {
                                             <Image src={greenRial} alt="rial" width={14} height={14} />
                                         </div>
                                     </td>
-
                                 </tr>
                             ))
                         ) : (

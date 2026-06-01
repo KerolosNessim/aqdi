@@ -14,6 +14,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import PermissionGate from '@/components/auth/PermissionGate';
+import { PERMISSION_SECTIONS } from '@/src/lib/permissions';
 
 export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +77,9 @@ const queryClient = useQueryClient();
       {/* page header */}
       <div className='flex items-center justify-between'>
         <h3 className='text-xl font-bold'>الموظفين</h3>
-        <AddNewEmployeeDialog />
+        <PermissionGate section={PERMISSION_SECTIONS.employees} action="create">
+          <AddNewEmployeeDialog />
+        </PermissionGate>
       </div>
       {/* page content */}
       <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
@@ -97,11 +101,12 @@ const queryClient = useQueryClient();
                     <div className='flex items-center gap-2'>
                       {employee.profile_image ? (
                         <div className="relative size-8 rounded-full overflow-hidden border border-[#eee]">
-                          <Image 
-                            src={employee.profile_image} 
-                            alt={employee.name} 
-                            fill 
-                            className="object-cover" 
+                          <Image
+                            src={employee.profile_image}
+                            alt={employee.name}
+                            width={32}
+                            height={32}
+                            className="size-full object-cover"
                           />
                         </div>
                       ) : (
@@ -138,15 +143,21 @@ const queryClient = useQueryClient();
                   </td>
                   <td className='p-[15px_20px]'>
                     <div className='flex items-center gap-2'>
-                      <Link 
-                        href={`/home/employees/${employee.id}`} 
-                        className="bg-brand-hover/20 text-black size-8 rounded-full flex items-center justify-center hover:bg-brand-hover hover:text-white transition-all"
-                      >
-                        <Eye className='size-4' />
-                      </Link>
-                      <BlockEmployeeDialog employee={employee} />
-                      <AddNewEmployeeDialog isEdit={true} employee={employee} table={true} />
-                      <DeleteEmployeeDialog employee={employee} />
+                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="view">
+                        <Link
+                          href={`/home/employees/${employee.id}`}
+                          className="bg-brand-hover/20 text-black size-8 rounded-full flex items-center justify-center hover:bg-brand-hover hover:text-white transition-all"
+                        >
+                          <Eye className='size-4' />
+                        </Link>
+                      </PermissionGate>
+                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="edit">
+                        <BlockEmployeeDialog employee={employee} />
+                        <AddNewEmployeeDialog isEdit={true} employee={employee} table={true} />
+                      </PermissionGate>
+                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="delete">
+                        <DeleteEmployeeDialog employee={employee} />
+                      </PermissionGate>
                     </div>
                   </td>
                 </tr>

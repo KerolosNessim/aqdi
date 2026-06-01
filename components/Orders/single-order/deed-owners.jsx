@@ -24,6 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import NotClear from "./not-clear";
 import NotClearAgent from "./not-clear-agent";
+import { ContractStepEditor } from "./contract-edit/contract-step-editor";
+import {
+  SUMMARY_OWNER_FIELDS,
+  SUMMARY_AGENT_FIELDS,
+} from "./contract-edit/contract-field-schemas";
 
 
 
@@ -122,26 +127,26 @@ const orderData = data?.contract_summary
       {/* info */}
       <div className="w-2/3 space-y-10">
         {/* owner */}
-        <div>
-          <div className="flex items-center gap-1 text-xs mb-4">
-            <p>بيــانات المــلاك :</p>
-          </div>
-
-          <div className="flex justify-between">
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <InfoItem value={owner.nationalId} label="رقم الهوية" />
-                <InfoItem value={owner.birthDate} label="تاريخ الميلاد" />
-                <InfoItem value={owner.phone} label="رقم الجوال" />
-                <InfoItem value={owner.name} label="اسم المالك" />
-                <div className="col-span-2">
-                  <InfoItem value={owner.iban} label="ايبان المالك" />
+        <div className="w-full">
+          <ContractStepEditor
+            title="بيــانات المــلاك"
+            step="summary"
+            fields={SUMMARY_OWNER_FIELDS}
+          >
+            <div className="flex justify-between gap-4">
+              <div className="space-y-6 flex-1">
+                <div className="grid grid-cols-3 gap-4">
+                  <InfoItem value={owner.nationalId} label="رقم الهوية" />
+                  <InfoItem value={owner.birthDate} label="تاريخ الميلاد" />
+                  <InfoItem value={owner.phone} label="رقم الجوال" />
+                  <InfoItem value={owner.name} label="اسم المالك" />
+                  <div className="col-span-2">
+                    <InfoItem value={owner.iban} label="ايبان المالك" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* dropdown */}
-            <DropdownMenu dir="rtl">
+              <DropdownMenu dir="rtl">
               <DropdownMenuTrigger asChild>
                 <Button className="text-xs p-4 bg-pink-200 text-pink-600 rounded-full">
                   إرسال خطأ <HiMiniBellAlert />
@@ -157,29 +162,29 @@ const orderData = data?.contract_summary
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              </DropdownMenu>
+            </div>
+          </ContractStepEditor>
         </div>
 
-        {/* agent */}
         {orderData?.add_legal_agent_of_owner === 1 && (
-          <div>
-            <div className="flex items-center gap-1 text-xs mb-4">
-              <p>بيــانات الوكيل :</p>
-            </div>
-
-            <div className="flex justify-between bg-gray-100 p-6 rounded-3xl">
-              <div className="space-y-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <InfoItem value={agent.nationalId} label="رقم الهوية" />
-                  <InfoItem value={agent.birthDate} label="تاريخ الميلاد" />
-                  <InfoItem value={agent.phone} label="رقم الجوال" />
-                  <InfoItem value={agent.name} label="اسم الوكيل" />
-
+          <div className="w-full">
+            <ContractStepEditor
+              title="بيــانات الوكيل"
+              step="summary"
+              fields={SUMMARY_AGENT_FIELDS}
+            >
+              <div className="flex justify-between bg-gray-100 p-6 rounded-3xl gap-4">
+                <div className="space-y-6 flex-1">
+                  <div className="grid grid-cols-3 gap-4">
+                    <InfoItem value={agent.nationalId} label="رقم الهوية" />
+                    <InfoItem value={agent.birthDate} label="تاريخ الميلاد" />
+                    <InfoItem value={agent.phone} label="رقم الجوال" />
+                    <InfoItem value={agent.name} label="اسم الوكيل" />
+                  </div>
                 </div>
-              </div>
 
-              <DropdownMenu dir="rtl">
+                <DropdownMenu dir="rtl">
                 <DropdownMenuTrigger asChild>
                   <Button className="text-xs p-4 bg-pink-200 text-pink-600 rounded-full">
                     خطأ الوكيل <HiMiniBellAlert />
@@ -195,8 +200,9 @@ const orderData = data?.contract_summary
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                </DropdownMenu>
+              </div>
+            </ContractStepEditor>
           </div>
         )}
       </div>

@@ -10,12 +10,14 @@ import Loader from '@/components/home/loader'
 import { useQuery } from '@tanstack/react-query'
 import { axiosInstance } from '@/src/utils/axios'
 import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function OrdersAnalysisWrapper({ id }) {
     const router = useRouter()
     const [title, setTitle] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -23,6 +25,10 @@ export default function OrdersAnalysisWrapper({ id }) {
         }, 500);
         return () => clearTimeout(handler);
     }, [searchQuery]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [id, debouncedSearchQuery]);
 
     useEffect(() => {
         switch (id) {
@@ -230,17 +236,18 @@ export default function OrdersAnalysisWrapper({ id }) {
 
     function getInCompletedOrders() {
         const createAt = id === 'total' ? 'all' : id;
-        let url = `/admin/orders/incomplete/list?created_at=${createAt}`;
+        let url = `/admin/orders/incomplete/list?created_at=${createAt}&page=${currentPage}`;
         if (debouncedSearchQuery) {
             url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
         }
         return axiosInstance(url)
     }
     const { data, isLoading } = useQuery({
-        queryKey: ["inCompletedOrders", id, debouncedSearchQuery],
+        queryKey: ["inCompletedOrders", id, debouncedSearchQuery, currentPage],
         queryFn: getInCompletedOrders
     })
-    const orders = data?.data?.data ?? []
+    const orders = data?.data?.data?.items ?? []
+    const pagination = data?.data?.data?.pagination
 
 
     if (isLoading) return <Loader />
@@ -308,12 +315,12 @@ export default function OrdersAnalysisWrapper({ id }) {
                                     </div>
                                 </td>
                                 <td className="p-[15px_20px]">
-                                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : row.contractType === 'تجــاري' ? 'bg-[#FFE6F0] text-[#EC4899]' : 'bg-[#E6F0FF] text-[#3B82F6]'}`}>
+                                    <span className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${row.contractType === 'سكنـي' ? 'bg-[#F0E6FF] text-[#7C3AED]' : row.contractType === 'تجــاري' ? 'bg-[#FFE6F0] text-[#EC4899]' : 'bg-[#E6F0FF] text-[#3B82F6]'}`}>
                                         {row?.contract_type}
                                     </span>
                                 </td>
                                 <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
+                                    <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F9F9F9] border border-[#eee] text-[#4D4D4D]">
                                         {row?.instrument_type ?? "---"}
                                     </span>
                                 </td>
@@ -326,7 +333,7 @@ export default function OrdersAnalysisWrapper({ id }) {
                                 </td>
                                 <td className="p-[15px_20px] text-[13px] text-[#A3A3A3] whitespace-nowrap">{new Date(row?.updated_at).toLocaleDateString('ar-EG')}</td>
                                 <td className="p-[15px_20px]">
-                                    <span className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ backgroundColor: row?.status?.color || "#FFFBE6" }}>
+                                    <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap" style={{ backgroundColor: row?.status?.color || "#FFFBE6" }}>
                                         {row?.status?.name ? row?.status?.name : "قيد المعالجه"}
                                     </span>
                                 </td>
@@ -345,18 +352,69 @@ export default function OrdersAnalysisWrapper({ id }) {
                 </table>
             </div>
 
-            {/* <div className="flex items-center justify-center gap-2.5 mt-4">
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-right text-[12px]"></i>
-                </button>
-                <button className="w-9 h-9 rounded-full bg-brand-main text-white flex items-center justify-center text-[13px] font-medium shadow-lg shadow-brand-main/20">1</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">2</button>
-                <span className="text-[#A3A3A3]">...</span>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-[#f5f5f5] transition-all text-[13px]">40</button>
-                <button className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all">
-                    <i className="fa-solid fa-chevron-left text-[12px]"></i>
-                </button>
-            </div> */}
+            {pagination && pagination.last_page > 1 && (
+                <div className="flex items-center justify-center gap-2.5 mt-4" dir="rtl">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+                    >
+                        <ChevronRight className="size-4" />
+                    </button>
+
+                    {(() => {
+                        const pages = [];
+                        const { last_page } = pagination;
+                        const range = 1;
+                        const start = Math.max(1, currentPage - range);
+                        const end = Math.min(last_page, currentPage + range);
+
+                        if (start > 1) {
+                            pages.push(1);
+                            if (start > 2) pages.push('...');
+                        }
+
+                        for (let i = start; i <= end; i++) {
+                            pages.push(i);
+                        }
+
+                        if (end < last_page) {
+                            if (end < last_page - 1) pages.push('...');
+                            pages.push(last_page);
+                        }
+
+                        return pages.map((page, idx) => {
+                            if (page === '...') {
+                                return (
+                                    <span key={`dots-${idx}`} className="text-[#A3A3A3] px-1">
+                                        ...
+                                    </span>
+                                );
+                            }
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium transition-all ${currentPage === page
+                                        ? "bg-brand-main text-white shadow-lg shadow-brand-main/20"
+                                        : "border border-[#E4E4E4] text-[#A3A3A3] hover:bg-[#f5f5f5]"
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            );
+                        });
+                    })()}
+
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.min(pagination.last_page, prev + 1))}
+                        disabled={currentPage === pagination.last_page}
+                        className="w-9 h-9 rounded-full border border-[#E4E4E4] flex items-center justify-center text-[#A3A3A3] hover:bg-brand-main hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[#A3A3A3]"
+                    >
+                        <ChevronLeft className="size-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

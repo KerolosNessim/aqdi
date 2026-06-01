@@ -1,8 +1,7 @@
 import AllOrdersWrapper from '@/components/Orders/AllOrdersWrapper'
-import React from 'react'
-export default async function page({ params }) {
-    const { id } = await params
+
+export default function OrdersPage() {
     return (
-        <AllOrdersWrapper id={id} />
+        <AllOrdersWrapper />
     )
 }
