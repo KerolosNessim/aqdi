@@ -37,3 +37,63 @@ export function groupAlertsBySection(alerts) {
   return Array.from(map.values());
 }
 
+export function getAlertDisplayName(alert) {
+  return (
+    alert?.section_item?.name_ar ||
+    alert?.section_item?.name_en ||
+    alert?.section?.name_ar ||
+    alert?.section?.name_en ||
+    "—"
+  );
+}
+
+export function getAlertContractType(alert) {
+  const sectionType = alert?.section?.contract_type ?? alert?.contract_type;
+  if (sectionType === "housing" || sectionType === "commercial") return sectionType;
+
+  const sectionName = alert?.section?.name_ar || alert?.section?.name_en || "";
+  if (/تجار|commercial/i.test(sectionName)) return "commercial";
+  if (/سكن|housing/i.test(sectionName)) return "housing";
+
+  const itemName = getAlertDisplayName(alert);
+  if (/^تجار|تجاري/i.test(itemName.trim())) return "commercial";
+  if (/^سكن|سكني/i.test(itemName.trim())) return "housing";
+
+  return "housing";
+}
+
+/** Sort contract variants: base → bank auth → waqf → paper → heirs → paper+heirs */
+export function getContractVariantSortIndex(name = "") {
+  const text = String(name).trim();
+  if (/ورقي\s*\+\s*ورث|ورث.*ورقي|ورقي.*ورث/i.test(text)) return 5;
+  if (/ورث/i.test(text)) return 4;
+  if (/صك\s*ورقي|ورقي/i.test(text)) return 3;
+  if (/وقف/i.test(text)) return 2;
+  if (/تفويض|البنك/i.test(text)) return 1;
+  if (/^(سكني|تجاري)$/i.test(text)) return 0;
+  return 50;
+}
+
+export function groupAlertsByContractType(alerts = []) {
+  const housing = [];
+  const commercial = [];
+
+  for (const alert of alerts) {
+    const type = getAlertContractType(alert);
+    if (type === "commercial") commercial.push(alert);
+    else housing.push(alert);
+  }
+
+  const sortByVariant = (a, b) =>
+    getContractVariantSortIndex(getAlertDisplayName(a)) -
+    getContractVariantSortIndex(getAlertDisplayName(b));
+
+  housing.sort(sortByVariant);
+  commercial.sort(sortByVariant);
+
+  return [
+    { id: "housing", name: "سكني", items: housing },
+    { id: "commercial", name: "تجاري", items: commercial },
+  ];
+}
+

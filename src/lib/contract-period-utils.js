@@ -1,13 +1,47 @@
 import { getInstrumentTypeLabel, INSTRUMENT_TYPES } from "./instrument-types";
 
-export function normalizeContractPeriods(response) {
-  const payload = response?.data ?? response;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.data?.items)) return payload.data.items;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
-  if (Array.isArray(payload)) return payload;
+function firstArray(...candidates) {
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
   return [];
+}
+
+export function normalizeContractPeriods(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+
+  const payload = response?.data ?? response;
+
+  return firstArray(
+    payload?.items,
+    payload?.data?.items,
+    payload?.data?.data?.data,
+    payload?.data?.data,
+    payload?.data,
+    payload
+  );
+}
+
+export function getPeriodContractType(period, fallback = "housing") {
+  const type = period?.contract_type;
+  if (type === "commercial" || type === "housing") return type;
+  return fallback;
+}
+
+export function groupContractPeriodsByContractType(periods = []) {
+  const byType = { housing: [], commercial: [] };
+
+  for (const period of periods) {
+    const type = getPeriodContractType(period);
+    byType[type].push(period);
+  }
+
+  return ["housing", "commercial"].map((type) => ({
+    id: type,
+    name: getContractTypeLabel(type),
+    sections: groupContractPeriodsByInstrumentType(byType[type]),
+  }));
 }
 
 export function formatContractPeriodPrice(price) {

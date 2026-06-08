@@ -47,18 +47,31 @@ export default function LoginPage() {
     },
     onSuccess: async (response) => {
       if (response?.success && response?.data?.token) {
-        const userWithPermissions = await enrichUserWithRolePermissions(
-          response.data,
-          (roleId) => axiosInstance.get(`/admin/roles/${roleId}`).then((res) => res?.data)
-        );
-        toast.success(response?.message);
-        setAuth(userWithPermissions, userWithPermissions?.token);
-        await setAuthCookie(userWithPermissions?.token);
-        router.push('/home');
+        try {
+          const userWithPermissions = await enrichUserWithRolePermissions(
+            response.data,
+            (roleId) => axiosInstance.get(`/admin/roles/${roleId}`).then((res) => res?.data)
+          );
+          toast.success(response?.message || "تم تسجيل الدخول بنجاح");
+          setAuth(userWithPermissions, userWithPermissions?.token);
+          await setAuthCookie(userWithPermissions?.token);
+          router.push('/home');
+        } catch (error) {
+          console.error('Login post-processing error:', error);
+          toast.error('حدث خطأ أثناء إكمال تسجيل الدخول');
+        }
+        return;
       }
+
+      toast.error(response?.message || 'بيانات الدخول غير صحيحة');
     },
     onError: (error) => {
-      toast.error(error?.response?.data?.message);
+      const message =
+        error?.response?.data?.message ||
+        (error?.message === 'Network Error'
+          ? 'تعذر الاتصال بالخادم، تحقق من اتصالك بالإنترنت'
+          : 'حدث خطأ أثناء تسجيل الدخول');
+      toast.error(message);
       console.error('Login error:', error);
     }
   })
@@ -144,28 +157,20 @@ export default function LoginPage() {
             
             <FormField name="remember" control={form.control} render={({ field }) => (
               <FormItem>
-                <div className="flex items-center justify-between w-full">
-                  <FormControl>
-                    <label className="flex items-center gap-2.5 cursor-pointer group">
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <input
-                          type="checkbox"
-                          className="peer appearance-none w-5 h-5 rounded border-2 border-[#D9D9D9] bg-white checked:bg-brand-main checked:border-brand-main transition-all cursor-pointer"
-                          checked={!!field.value}
-                          onChange={field.onChange}
-                        />
-                        <i className="fa-solid fa-check absolute text-white text-[10px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
-                      </div>
-                      <span className="text-[14px]  text-[#363636] group-hover:text-black transition-colors">تذكرني</span>
-                    </label>
-                  </FormControl>
-                  <Link
-                    href="/forgot-password"
-                    className="text-[14px]  text-[#363636] hover:text-brand-main transition-colors"
-                  >
-                    هل نسيت كلمة المرور ؟
-                  </Link>
-                </div>
+                <FormControl>
+                  <label className="flex items-center gap-2.5 cursor-pointer group w-fit">
+                    <div className="relative flex items-center justify-center w-5 h-5">
+                      <input
+                        type="checkbox"
+                        className="peer appearance-none w-5 h-5 rounded border-2 border-[#D9D9D9] bg-white checked:bg-brand-main checked:border-brand-main transition-all cursor-pointer"
+                        checked={!!field.value}
+                        onChange={field.onChange}
+                      />
+                      <i className="fa-solid fa-check absolute text-white text-[10px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                    </div>
+                    <span className="text-[14px] text-[#363636] group-hover:text-black transition-colors">تذكرني</span>
+                  </label>
+                </FormControl>
               </FormItem>
             )} />
             

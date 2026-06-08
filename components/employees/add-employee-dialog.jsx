@@ -15,14 +15,14 @@ export default function AddNewEmployeeDialog({ isEdit = false, employee, table =
     <Dialog dir='rtl' open={open} onOpenChange={setOpen}>
       <DialogTrigger>
         {isEdit ? (
-          <Button className={`  rounded-full flex items-center justify-center  ${table ? "size-8 bg-green-600/20 text-green-600 hover:bg-green-600 hover:text-white p-0" : "text-white"}`} size={table ? "icon" : "default"}>
+          <Button className={`rounded-full flex items-center justify-center shadow-none border-0 ${table ? "w-9 h-9 bg-[#E6FFE6] text-[#10B981] hover:bg-[#10B981] hover:text-white p-0" : "text-white"}`} size={table ? "icon" : "default"}>
             <Edit className='size-4' />
             {!table && 'تعديل'}
           </Button>
         ) : (
-          <Button className='bg-brand-hover text-white h-12'>
-            إضافة موظف جديد
-            <Plus className='w-4 h-4' />
+          <Button className="bg-brand-hover hover:bg-brand-hover/90 text-white h-12 rounded-full font-bold px-6 gap-2 whitespace-nowrap">
+            + إضافة موظف
+            <Plus className="w-4 h-4" />
           </Button>
         )}
       </DialogTrigger>

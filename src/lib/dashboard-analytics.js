@@ -51,6 +51,34 @@ export function formatMap(record, basePath, valueType = 'price') {
   }));
 }
 
+/** Fixed display order for تحليلات الطلبات cards (matches dashboard layout). */
+export function getOrderAnalyticsSortIndex(item) {
+  const label = item?.label_ar ?? item?.label ?? "";
+  const key = (item?.key ?? "").toLowerCase();
+
+  if (key.includes("whatsapp") && key.includes("incomplete")) return 3;
+  if (key.includes("whatsapp") && key.includes("complete")) return 2;
+  if (key.includes("completion") || key.includes("completion_rate")) return 5;
+  if (key.includes("return") || key.includes("refund")) return 4;
+  if (key.includes("incomplete")) return 1;
+  if (key.includes("complete") || key.includes("completed")) return 0;
+
+  if (label.includes("واتساب") && (label.includes("غير") || label.includes("الغير"))) return 3;
+  if (label.includes("واتساب") && label.includes("مكتمل")) return 2;
+  if (label.includes("معدل")) return 5;
+  if (label.includes("مسترج") || label.includes("استرجاع")) return 4;
+  if (label.includes("غير") && label.includes("مكتمل")) return 1;
+  if (label.includes("مكتمل")) return 0;
+
+  return 999;
+}
+
+export function sortOrderAnalytics(items = []) {
+  return [...items].sort(
+    (a, b) => getOrderAnalyticsSortIndex(a) - getOrderAnalyticsSortIndex(b)
+  );
+}
+
 export function normalizeDashboardAnalytics(raw) {
   if (!raw) return null;
 

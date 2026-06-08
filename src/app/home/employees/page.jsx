@@ -1,15 +1,14 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AddNewEmployeeDialog from '@/components/employees/add-employee-dialog';
 import DeleteEmployeeDialog from '@/components/employees/delete-employee-dialog';
 import BlockEmployeeDialog from '@/components/employees/block-employee-dialog';
-import Header from '@/components/home/Header';
+import SubPageHeader from '@/components/home/SubPageHeader';
 import Loader from '@/components/home/loader';
-import { Button } from '@/components/ui/button';
 import greenRial from '@/public/images/greenRial.svg';
 import { axiosInstance } from '@/src/utils/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Blocks, Edit, Eye, Trash2, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
@@ -19,10 +18,25 @@ import { PERMISSION_SECTIONS } from '@/src/lib/permissions';
 
 export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
-const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
-  function getAllEmployees(page = 1) {
-    return axiosInstance.get(`/admin/employees?page=${page}`)
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
+
+  function getAllEmployees(page = 1, search = '') {
+    let url = `/admin/employees?page=${page}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return axiosInstance.get(url)
       .then((res) => res?.data)
       .catch((err) => {
         throw err;
@@ -30,8 +44,8 @@ const queryClient = useQueryClient();
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ['allEmployees', currentPage],
-    queryFn: () => getAllEmployees(currentPage)
+    queryKey: ['allEmployees', currentPage, debouncedSearchQuery],
+    queryFn: () => getAllEmployees(currentPage, debouncedSearchQuery)
   });
 
   const employees = data?.items || data?.data?.items;
@@ -66,23 +80,38 @@ const queryClient = useQueryClient();
     "الاجـــراءات",
   ];
 
+  const handleRefresh = () => {
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+    setCurrentPage(1);
+    queryClient.invalidateQueries({ queryKey: ['allEmployees'] });
+  };
+
   if (isLoading) {
     return <Loader />;
   }
 
   return (
-    <div>
-      {/* app header */}
-      <Header page='welcome' title="الموظفين" isMain={false} first="الرئيــسية" firstURL="/" second='الموظفين' secondURL="/home/employees" />
-      {/* page header */}
-      <div className='flex items-center justify-between'>
-        <h3 className='text-xl font-bold'>الموظفين</h3>
+    <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
+      <SubPageHeader
+        title="الموظفين"
+        isMain={false}
+        first="الموظفين والأدوار"
+        firstURL="/home/employees"
+        second="جميع الموظفين"
+        secondURL="/home/employees"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onRefresh={handleRefresh}
+      />
+
+      <div className="flex flex-wrap items-center gap-3 w-full">
         <PermissionGate section={PERMISSION_SECTIONS.employees} action="create">
           <AddNewEmployeeDialog />
         </PermissionGate>
       </div>
-      {/* page content */}
-      <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
+
+      <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] shadow-sm">
         <table className="w-full border-collapse">
           <thead className="bg-[#FAFAFA]">
             <tr>
@@ -143,20 +172,21 @@ const queryClient = useQueryClient();
                   </td>
                   <td className='p-[15px_20px]'>
                     <div className='flex items-center gap-2'>
+                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="delete">
+                        <DeleteEmployeeDialog employee={employee} />
+                      </PermissionGate>
+                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="edit">
+                        <AddNewEmployeeDialog isEdit={true} employee={employee} table={true} />
+                        <BlockEmployeeDialog employee={employee} />
+                      </PermissionGate>
                       <PermissionGate section={PERMISSION_SECTIONS.employees} action="view">
                         <Link
                           href={`/home/employees/${employee.id}`}
-                          className="bg-brand-hover/20 text-black size-8 rounded-full flex items-center justify-center hover:bg-brand-hover hover:text-white transition-all"
+                          className="w-9 h-9 rounded-full flex items-center justify-center bg-[#E8E8FF] text-[18px] leading-none hover:scale-105 transition-all"
+                          aria-label="عرض التفاصيل"
                         >
-                          <Eye className='size-4' />
+                          👁️
                         </Link>
-                      </PermissionGate>
-                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="edit">
-                        <BlockEmployeeDialog employee={employee} />
-                        <AddNewEmployeeDialog isEdit={true} employee={employee} table={true} />
-                      </PermissionGate>
-                      <PermissionGate section={PERMISSION_SECTIONS.employees} action="delete">
-                        <DeleteEmployeeDialog employee={employee} />
                       </PermissionGate>
                     </div>
                   </td>

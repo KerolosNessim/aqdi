@@ -42,7 +42,7 @@ function copyPeriod(period) {
 
 export default function OrderContractPeriodsDialog({ open, onOpenChange }) {
 
-  const { groups, isLoading } = useContractPeriods(open);
+  const { groups, isLoading, hasPeriods } = useContractPeriods(open);
 
 
 
@@ -92,7 +92,7 @@ export default function OrderContractPeriodsDialog({ open, onOpenChange }) {
 
           </div>
 
-        ) : !groups.length ? (
+        ) : !hasPeriods ? (
 
           <p className="text-[14px] text-[#A3A3A3] text-center py-12">لا توجد أسعار</p>
 

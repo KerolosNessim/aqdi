@@ -5,8 +5,12 @@ import waIcon from "@/public/images/waIcon.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Eye, MoreVertical } from "lucide-react";
 import ChangeStatusDialog from "../change-status-dialog";
+import {
+  getContractTypeBadgeClass,
+  getDocumentTypeBadgeClass,
+  getOrderStatusBadgeStyle,
+} from "./orders-status-utils";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "---";
@@ -20,6 +24,30 @@ function formatRelativeTime(dateString) {
   return `منذ ${days} ي`;
 }
 
+function PaymentCell({ row }) {
+  const isPaid =
+    row?.is_paid === true ||
+    row?.is_paid === 1 ||
+    (row?.amount_payment && row?.is_paid !== false && row?.is_paid !== 0);
+
+  if (!isPaid) {
+    return (
+      <div className="flex items-center gap-1.5 text-[#10B981] font-bold text-[13px]">
+        <i className="fa-solid fa-circle-check text-[12px]" />
+        <span>{row?.payment_label_ar || "لم يتم الدفع"}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 text-[#007C13] font-bold text-[13px]">
+      <i className="fa-solid fa-circle-check text-[12px]" />
+      <span>{row?.amount_payment}</span>
+      <Image src={greenRial} alt="rial" width={14} height={14} />
+    </div>
+  );
+}
+
 export default function OrdersTable({
   orders = [],
   showStatusColumn = true,
@@ -28,7 +56,6 @@ export default function OrdersTable({
   onRowClick,
 }) {
   const tableHeaders = [
-
     "رقــم الطلب",
     "رقــم جوال العميل",
     "نــوع العقــد",
@@ -63,110 +90,107 @@ export default function OrdersTable({
               </td>
             </tr>
           ) : (
-            orders.map((row) => (
-              <tr
-                key={row.id}
-                onClick={() => onRowClick?.(row)}
-                className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer"
-              >
+            orders.map((row) => {
+              const statusName = row?.status?.name || row?.contract_status_name || "قيد المعالجة";
+              const statusStyle = getOrderStatusBadgeStyle(statusName, row?.status?.color);
 
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-[#f9f9f9] rounded-lg w-fit mx-auto border border-[#eee]">
-                    <span className="text-black text-[12px] font-bold">{row?.uuid}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigator.clipboard.writeText(row?.uuid);
-                        toast.success("تم نسخ رقم الطلب");
-                      }}
-                      className="text-[#A3A3A3] hover:text-brand-main"
-                    >
-                      <i className="fa-regular fa-copy text-[11px]" />
-                    </button>
-                  </div>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`https://wa.me/${row?.user_mobile}`}
-                      target="_blank"
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:scale-110 transition-all"
-                    >
-                      <Image src={waIcon} alt="wa" width={16} height={16} />
-                    </Link>
-                    <span className="text-black text-[13px]" dir="ltr">
-                      {row?.user_mobile}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigator.clipboard.writeText(row?.user_mobile);
-                        toast.success("تم نسخ رقم الجوال");
-                      }}
-                      className="text-[#A3A3A3] hover:text-brand-main"
-                    >
-                      <i className="fa-regular fa-copy text-[11px]" />
-                    </button>
-                  </div>
-                </td>
-                <td className="p-[15px_20px]">
-                  <span
-                    className={`px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap ${
-                      row?.contract_type_key === "housing" || row?.contract_type === "سكني"
-                        ? "bg-[#E6F0FF] text-[#3B82F6]"
-                        : "bg-[#F0E6FF] text-[#7C3AED]"
-                    }`}
-                  >
-                    {row?.contract_type || "---"}
-                  </span>
-                </td>
-                <td className="p-[15px_20px]">
-                  <span className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap bg-[#F0E6FF] text-[#7C3AED]">
-                    {row?.instrument_type ?? "---"}
-                  </span>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-1.5 text-[#007C13] font-bold text-[13px]">
-                    <i className="fa-solid fa-circle-check text-[12px]" />
-                    <span>{row?.amount_payment}</span>
-                    <Image src={greenRial} alt="rial" width={14} height={14} />
-                  </div>
-                </td>
-                <td className="p-[15px_20px] text-[13px] text-[#A3A3A3] whitespace-nowrap">
-                  {formatRelativeTime(row?.updated_at)}
-                </td>
-                {showStatusColumn && (
+              return (
+                <tr
+                  key={row.id}
+                  onClick={() => onRowClick?.(row)}
+                  className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer"
+                >
                   <td className="p-[15px_20px]">
-                    <span
-                      className="px-3 py-1 rounded text-[11px] font-bold whitespace-nowrap text-[#212121]"
-                      style={{ backgroundColor: row?.status?.color || "#E6FFE6" }}
-                    >
-                      {row?.status?.name || "قيد المعالجة"}
+                    <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-[#f9f9f9] rounded-lg w-fit mx-auto border border-[#eee]">
+                      <span className="text-black text-[12px] font-bold">{row?.uuid}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(row?.uuid);
+                          toast.success("تم نسخ رقم الطلب");
+                        }}
+                        className="text-[#A3A3A3] hover:text-brand-main"
+                      >
+                        <i className="fa-regular fa-copy text-[11px]" />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`https://wa.me/${row?.user_mobile}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:scale-110 transition-all"
+                      >
+                        <Image src={waIcon} alt="wa" width={16} height={16} />
+                      </Link>
+                      <span className="text-black text-[13px]" dir="ltr">
+                        {row?.user_mobile}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(row?.user_mobile);
+                          toast.success("تم نسخ رقم الجوال");
+                        }}
+                        className="text-[#A3A3A3] hover:text-brand-main"
+                      >
+                        <i className="fa-regular fa-copy text-[11px]" />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <span className={getContractTypeBadgeClass(row)}>
+                      {row?.contract_type || "---"}
                     </span>
                   </td>
-                )}
-                <td className="p-[15px_20px]">
-                  <span className="text-[13px] text-[#4D4D4D] font-medium">{row?.employee_name || "---"}</span>
-                </td>
-                <td className="p-[15px_20px]">
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => onRowClick?.(row)}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[#4D4D4D] hover:bg-brand-main hover:text-white transition-all"
-                    >
-                      <Eye className="size-4" />
-                    </button>
-                    {showChangeStatus && (
-                      <ChangeStatusDialog orderId={row?.id} queryKey={queryKey} />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
+                  <td className="p-[15px_20px]">
+                    <span className={getDocumentTypeBadgeClass()}>
+                      {row?.instrument_type ?? "---"}
+                    </span>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <PaymentCell row={row} />
+                  </td>
+                  <td className="p-[15px_20px] text-[13px] text-black font-medium whitespace-nowrap">
+                    {formatRelativeTime(row?.updated_at)}
+                  </td>
+                  {showStatusColumn && (
+                    <td className="p-[15px_20px]">
+                      <span
+                        className="px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
+                        style={statusStyle}
+                      >
+                        {statusName}
+                      </span>
+                    </td>
+                  )}
+                  <td className="p-[15px_20px]">
+                    <span className="text-[13px] text-[#4D4D4D] font-medium">
+                      {row?.employee_name || "---"}
+                    </span>
+                  </td>
+                  <td className="p-[15px_20px]">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {showChangeStatus && (
+                        <ChangeStatusDialog orderId={row?.id} queryKey={queryKey} />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onRowClick?.(row)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F5] text-[18px] leading-none hover:bg-brand-main hover:scale-105 transition-all"
+                        aria-label="عرض التفاصيل"
+                      >
+                        👁️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

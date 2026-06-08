@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import Header from '../../home/Header'
+import SubPageHeader from '../../home/SubPageHeader'
 import greenRial from '@/public/images/greenRial.svg'
 import Image from 'next/image'
 import whatsappIcon from '@/public/images/waIcon.svg'
@@ -21,6 +21,7 @@ export default function UsersAnalysisWrapper({ id }) {
     const [selectedUserId, setSelectedUserId] = useState(null)
     const [suspendAction, setSuspendAction] = useState('block')
     const [currentPage, setCurrentPage] = useState(1)
+    const [searchQuery, setSearchQuery] = useState('')
     const [togglingUserId, setTogglingUserId] = useState(null)
     const queryClient = useQueryClient()
 
@@ -120,20 +121,37 @@ export default function UsersAnalysisWrapper({ id }) {
     const rawData = responseData?.data;
     const isPaginated = rawData && !Array.isArray(rawData) && Array.isArray(rawData.items) && !!rawData.pagination;
     const usersList = isPaginated ? rawData.items : (rawData?.items ? rawData.items : (Array.isArray(rawData) ? rawData : []));
+
+    const filteredUsersList = searchQuery.trim()
+        ? usersList.filter((row) => {
+            const q = searchQuery.toLowerCase().trim();
+            return [row.name, row.full_name, row.email, row.phone, row.mobile]
+                .filter(Boolean)
+                .some((value) => String(value).toLowerCase().includes(q));
+        })
+        : usersList;
     
     // Pagination math (Supports both flat arrays and paginated responses)
     const ITEMS_PER_PAGE = 10;
     const displayedUsers = isPaginated 
-        ? usersList 
-        : usersList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+        ? (searchQuery.trim() ? filteredUsersList : usersList)
+        : filteredUsersList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     const pagination = isPaginated 
-        ? rawData.pagination 
+        ? (searchQuery.trim()
+            ? { current_page: 1, last_page: 1, total: filteredUsersList.length }
+            : rawData.pagination)
         : {
             current_page: currentPage,
-            last_page: Math.max(1, Math.ceil(usersList.length / ITEMS_PER_PAGE)),
-            total: usersList.length
+            last_page: Math.max(1, Math.ceil(filteredUsersList.length / ITEMS_PER_PAGE)),
+            total: filteredUsersList.length
           };
+
+    const handleRefresh = () => {
+        setSearchQuery('');
+        setCurrentPage(1);
+        queryClient.invalidateQueries({ queryKey: ['usersAnalysis'] });
+    };
 
     const { mutate: toggleUserBlock, isPending: isTogglingBlock } = useMutation({
         mutationFn: ({ userId }) => axiosInstance.post(`/admin/users/${userId}/block`),
@@ -204,9 +222,21 @@ export default function UsersAnalysisWrapper({ id }) {
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={title} isMain={false} first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis" third={title} thirdURL={`/home/user-analysis/${id}`} />
+            <SubPageHeader
+                title={title}
+                isMain={false}
+                first="الرئيــسية"
+                firstURL="/"
+                second="التحليــلات"
+                secondURL="/home/analysis"
+                third={title}
+                thirdURL={`/home/user-analysis/${id}`}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onRefresh={handleRefresh}
+            />
             
-            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4">
+            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4]">
                 <table className="w-full border-collapse">
                     <thead className="bg-[#FAFAFA]">
                         <tr>

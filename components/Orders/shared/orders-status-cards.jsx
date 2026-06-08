@@ -1,19 +1,34 @@
 "use client";
 
+import Image from "next/image";
+import waIcon from "@/public/images/waIcon.svg";
+
 const getStatusEmoji = (name = "") => {
+  if (name.includes("واتساب") && (name.includes("غير") || name.includes("غير مكتمل"))) return "⛔";
+  if (name.includes("أخرى")) return "🤔";
+  if (name.includes("معالجة")) return "🤔";
+  if (name.includes("تأكيد") && name.includes("عقار")) return "⏳";
+  if (name.includes("إجراء") && name.includes("عميل")) return null;
+  if (name.includes("عميل") && !name.includes("تأكيد")) return null;
+  if (name.includes("تم تأكيد")) return "🏡";
+  if (name.includes("اعتماد")) return "🥳";
   if (name.includes("جديد")) return "🆕";
   if (name.includes("استرجاع") || name.includes("مسترج")) return "↩️";
   if (name.includes("ملغ")) return "❌";
-  if (name.includes("معلق")) return "⏳";
-  if (name.includes("مستلم")) return "📥";
-  if (name.includes("معالجة")) return "🤔";
-  if (name.includes("تأكيد") && name.includes("عقار")) return "⏳";
-  if (name.includes("عميل")) return "📱";
-  if (name.includes("تم تأكيد")) return "🏠";
-  if (name.includes("اعتماد")) return "🥳";
-  if (name.includes("غير") || name.includes("غير مكتمل")) return "🚫";
-  return "🧐";
+  return "🤔";
 };
+
+const usesWhatsAppIcon = (name = "") =>
+  name.includes("إجراء") && name.includes("عميل");
+
+const getActionLabel = (name = "") => {
+  if (name.includes("واتساب") && (name.includes("غير") || name.includes("غير مكتمل"))) {
+    return "عرض";
+  }
+  return "تصفية";
+};
+
+const isViewAction = (label) => label === "عرض";
 
 const formatCount = (count) => {
   if (count == null || count === "") return "00";
@@ -23,31 +38,74 @@ const formatCount = (count) => {
   return String(num).padStart(2, "0");
 };
 
+function StatusIcon({ name }) {
+  if (usesWhatsAppIcon(name)) {
+    return (
+      <Image src={waIcon} alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" />
+    );
+  }
+
+  const emoji = getStatusEmoji(name);
+  return <span className="text-[22px] leading-none">{emoji}</span>;
+}
+
+function StatusCard({ item, count, isActive, onClick, actionLabel }) {
+  const viewAction = isViewAction(actionLabel);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bg-[#F5F5F5] rounded-[16px] border p-4 flex flex-col min-h-[118px] text-right transition-all hover:shadow-md ${
+        isActive
+          ? "border-brand-main shadow-md ring-2 ring-brand-main/15"
+          : "border-transparent hover:border-[#E0E0E0]"
+      }`}
+    >
+      <div className="flex justify-end w-full">
+        <StatusIcon name={item.name} />
+      </div>
+
+      <p className="text-[11px] font-bold text-[#1A1A1A] leading-snug mt-2 min-h-[32px] flex-1">
+        {item.name}
+      </p>
+
+      <div className="flex items-end justify-between gap-2 mt-3 w-full">
+        <span
+          className={`text-[11px] font-bold px-3 py-0.5 rounded-full shrink-0 ${
+            viewAction
+              ? "bg-white text-[#616161] border border-[#E0E0E0]"
+              : "text-[#10B981] border border-[#10B981]"
+          }`}
+        >
+          {actionLabel}
+        </span>
+        <span className="text-[32px] font-black text-black leading-none tabular-nums">
+          {formatCount(count)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
 export default function OrdersStatusCards({
   statusItems = [],
   activeFilter,
   onFilterChange,
-  showAllCard = true,
+  showAllCard = false,
   allTotal = 0,
   countsById = {},
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
       {showAllCard && (
-        <button
-          type="button"
+        <StatusCard
+          item={{ name: "الكل" }}
+          count={allTotal}
+          isActive={activeFilter === ""}
+          actionLabel="تصفية"
           onClick={() => onFilterChange("")}
-          className={`bg-white rounded-[20px] border p-4 flex flex-col gap-3 text-right transition-all hover:-translate-y-1 hover:shadow-lg ${
-            activeFilter === "" ? "border-brand-main shadow-md ring-2 ring-brand-main/10" : "border-[#E4E4E4]"
-          }`}
-        >
-          <div className="flex items-start justify-between w-full">
-            <span className="text-[26px] leading-none">📊</span>
-            <span className="text-[28px] font-black text-black leading-none">{formatCount(allTotal)}</span>
-          </div>
-          <p className="text-[12px] font-bold text-black leading-tight min-h-[32px]">الكل</p>
-          <span className="text-[11px] font-bold text-[#10B981] bg-[#E6FFE6] px-3 py-1 rounded-full w-fit">تصفية</span>
-        </button>
+        />
       )}
 
       {statusItems?.map((item) => {
@@ -61,21 +119,14 @@ export default function OrdersStatusCards({
           0;
 
         return (
-          <button
+          <StatusCard
             key={item.id}
-            type="button"
+            item={item}
+            count={count}
+            isActive={isActive}
+            actionLabel={getActionLabel(item.name)}
             onClick={() => onFilterChange(item.id)}
-            className={`bg-white rounded-[20px] border p-4 flex flex-col gap-3 text-right transition-all hover:-translate-y-1 hover:shadow-lg ${
-              isActive ? "border-brand-main shadow-md ring-2 ring-brand-main/10" : "border-[#E4E4E4]"
-            }`}
-          >
-            <div className="flex items-start justify-between w-full">
-              <span className="text-[26px] leading-none">{getStatusEmoji(item.name)}</span>
-              <span className="text-[28px] font-black text-black leading-none">{formatCount(count)}</span>
-            </div>
-            <p className="text-[12px] font-bold text-black leading-tight min-h-[32px]">{item.name}</p>
-            <span className="text-[11px] font-bold text-[#10B981] bg-[#E6FFE6] px-3 py-1 rounded-full w-fit">تصفية</span>
-          </button>
+          />
         );
       })}
     </div>

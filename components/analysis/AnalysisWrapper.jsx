@@ -18,6 +18,7 @@ import {
     formatMetricValue,
     formatPercentage,
     normalizeDashboardAnalytics,
+    sortOrderAnalytics,
 } from "@/src/lib/dashboard-analytics";
 import { parseNamesList } from "./finAnalysis/static-analysis-avatars";
 
@@ -205,7 +206,7 @@ export default function Statistics() {
         },
     ].filter(Boolean);
 
-    const orders = apiData.order_analytics.map((item) => ({
+    const orders = sortOrderAnalytics(apiData.order_analytics).map((item) => ({
         name: item.label_ar ?? "",
         value:
             item.type === "percentage"
@@ -217,6 +218,9 @@ export default function Statistics() {
         type: item.type === "percentage" ? "onlyNumber" : "regular",
         link: getOrderAnalyticsLink(item.label_ar),
     }));
+
+    const ordersRow1 = orders.slice(0, 3);
+    const ordersRow2 = orders.slice(3, 6);
 
     const employeesAnalysis = apiData.employee_analytics.map((item) => {
         let cardId = "total";
@@ -307,16 +311,6 @@ export default function Statistics() {
                 className="flex flex-col gap-2 min-h-screen w-full min-w-0 max-w-full  px-4 py-6  rounded-tl-[24px]"
                 dir="rtl"
             >
-                {controlPanel.length > 0 && (
-                    <AnalysisSection title="لوحة التحكم :">
-                        <CardGrid>
-                            {controlPanel.map((item, index) => (
-                                <AnalsCard key={`control-${index}`} item={item} />
-                            ))}
-                        </CardGrid>
-                    </AnalysisSection>
-                )}
-
                 <AnalysisSection title="التحليــلات المــاليــة :">
                     <CardGrid>
                         {financialIncomes.map((card, index) => (
@@ -364,11 +358,20 @@ export default function Statistics() {
                 </AnalysisSection>
 
                 <AnalysisSection title="تحلــيلات الطلبــات :">
-                    <CardGrid columns={GRID_3}>
-                        {orders.map((card, index) => (
-                            <OrderCard key={`order-${index}`} item={card} />
-                        ))}
-                    </CardGrid>
+                    {ordersRow1.length > 0 && (
+                        <CardGrid columns={GRID_3}>
+                            {ordersRow1.map((card, index) => (
+                                <OrderCard key={`order-1-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
+                    {ordersRow2.length > 0 && (
+                        <CardGrid columns={GRID_3}>
+                            {ordersRow2.map((card, index) => (
+                                <OrderCard key={`order-2-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    )}
                 </AnalysisSection>
 
                 <AnalysisSection title="تحلــيلات الموظفيــن :">
@@ -420,6 +423,16 @@ export default function Statistics() {
                         <CardGrid columns={`${GRID_3} xl:grid-cols-6`}>
                             {layeringAnalysis.map((card, index) => (
                                 <LayeringCard key={`layer-${index}`} item={card} />
+                            ))}
+                        </CardGrid>
+                    </AnalysisSection>
+                )}
+
+                {controlPanel.length > 0 && (
+                    <AnalysisSection title="لوحة التحكم :">
+                        <CardGrid>
+                            {controlPanel.map((item, index) => (
+                                <AnalsCard key={`control-${index}`} item={item} />
                             ))}
                         </CardGrid>
                     </AnalysisSection>

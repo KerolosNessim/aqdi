@@ -5,9 +5,10 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useOrderMessageAlerts } from "@/src/hooks/use-order-message-alerts";
 import OrderMessageDialog from "./order-message-dialog";
-import OrderContractPeriodsDialog from "./order-contract-periods-dialog";
+import OrderPricesPanel from "./order-prices-panel";
 import {
-  groupAlertsBySection,
+  getAlertDisplayName,
+  groupAlertsByContractType,
   isMessageOnline,
 } from "./order-message-utils";
 
@@ -17,8 +18,10 @@ const pillClass =
 const panelClass =
   "w-auto max-w-none rounded-[28px] border border-[#EBEBEB] bg-white p-3 shadow-[0_16px_48px_rgba(0,0,0,0.15)]";
 
+const columnsWrapClass = "flex flex-row items-start gap-3";
+
 const columnClass =
-  "bg-[#F3F3F3] rounded-[20px] p-2 min-w-[min(300px,calc(100vw-48px))] max-h-[min(70vh,480px)] overflow-y-auto";
+  "bg-[#F3F3F3] rounded-[20px] p-2 min-w-[min(280px,calc(50vw-32px))] max-w-[min(320px,calc(50vw-24px))] max-h-[min(70vh,480px)] overflow-y-auto";
 
 const rowClass =
   "flex items-center gap-2.5 w-full rounded-[14px] px-2.5 py-3 text-right transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-main/30";
@@ -65,8 +68,31 @@ function SectionRow({ name, showOnline, onClick }) {
   );
 }
 
+function ContractTypeColumn({ column, onSelect }) {
+  return (
+    <div className={columnClass}>
+      <p className="text-[13px] font-bold text-[#1A1A1A] px-2.5 py-2 mb-1">{column.name}</p>
+      {!column.items.length ? (
+        <p className="text-[12px] text-[#A3A3A3] text-center py-6">لا توجد رسائل</p>
+      ) : (
+        column.items.map((alert) => (
+          <SectionRow
+            key={alert.id}
+            name={getAlertDisplayName(alert)}
+            showOnline={isMessageOnline(alert)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(alert);
+            }}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
 function MessagesSectionsPanel({ alerts, isLoading, onSelect }) {
-  const sections = groupAlertsBySection(alerts);
+  const columns = groupAlertsByContractType(alerts);
 
   if (isLoading) {
     return (
@@ -76,7 +102,7 @@ function MessagesSectionsPanel({ alerts, isLoading, onSelect }) {
     );
   }
 
-  if (!sections.length) {
+  if (!alerts.length) {
     return (
       <div className={columnClass}>
         <p className="text-[13px] text-[#A3A3A3] text-center py-8">لا توجد رسائل</p>
@@ -85,48 +111,10 @@ function MessagesSectionsPanel({ alerts, isLoading, onSelect }) {
   }
 
   return (
-    <div className={columnClass}>
-      {sections.map((section) => {
-        if (section.items.length === 1) {
-          const alert = section.items[0];
-          return (
-            <SectionRow
-              key={section.id}
-              name={section.name}
-              showOnline={isMessageOnline(alert)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(alert);
-              }}
-            />
-          );
-        }
-
-        return (
-          <div key={section.id} className="mb-1">
-            <p className="text-[12px] font-bold text-[#737373] px-2.5 py-1.5">
-              {section.name}
-            </p>
-            {section.items.map((alert) => {
-              const itemLabel =
-                alert?.section_item?.name_ar ||
-                alert?.section_item?.name_en ||
-                "بند";
-              return (
-                <SectionRow
-                  key={alert.id}
-                  name={itemLabel}
-                  showOnline={isMessageOnline(alert)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect(alert);
-                  }}
-                />
-              );
-            })}
-          </div>
-        );
-      })}
+    <div className={columnsWrapClass}>
+      {columns.map((column) => (
+        <ContractTypeColumn key={column.id} column={column} onSelect={onSelect} />
+      ))}
     </div>
   );
 }
@@ -155,15 +143,13 @@ function DotSeparator() {
   return <span className="w-1 h-1 rounded-full bg-white/50 shrink-0" aria-hidden />;
 }
 
-function MessagesMenu({
+function DropdownMenuShell({
   menuId,
   label,
-  alerts,
-  isLoading,
   isOpen,
   onToggle,
   onClose,
-  onSelect,
+  children,
 }) {
   const rootRef = useRef(null);
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
@@ -226,11 +212,7 @@ function MessagesMenu({
             style={{ top: panelPos.top, left: panelPos.left }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <MessagesSectionsPanel
-              alerts={alerts}
-              isLoading={isLoading}
-              onSelect={onSelect}
-            />
+            {children}
           </div>,
           document.body
         )
@@ -246,16 +228,40 @@ function MessagesMenu({
   );
 }
 
-function PricesTriggerButton({ onClick }) {
+function MessagesMenu({
+  menuId,
+  label,
+  alerts,
+  isLoading,
+  isOpen,
+  onToggle,
+  onClose,
+  onSelect,
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1.5 text-[13px] font-semibold text-white transition-colors outline-none"
+    <DropdownMenuShell
+      menuId={menuId}
+      label={label}
+      isOpen={isOpen}
+      onToggle={onToggle}
+      onClose={onClose}
     >
-      الأسعار
-      <i className="fa-solid fa-chevron-down text-[10px] text-white" aria-hidden />
-    </button>
+      <MessagesSectionsPanel alerts={alerts} isLoading={isLoading} onSelect={onSelect} />
+    </DropdownMenuShell>
+  );
+}
+
+function PricesMenu({ isOpen, onToggle, onClose }) {
+  return (
+    <DropdownMenuShell
+      menuId="prices"
+      label="الأسعار"
+      isOpen={isOpen}
+      onToggle={onToggle}
+      onClose={onClose}
+    >
+      <OrderPricesPanel enabled={isOpen} />
+    </DropdownMenuShell>
   );
 }
 
@@ -263,7 +269,6 @@ export default function OrderMessagesNav() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [pricesDialogOpen, setPricesDialogOpen] = useState(false);
   const { employeeAlerts, clientAlerts, isLoading } = useOrderMessageAlerts(true);
 
   const handleSelect = (alert) => {
@@ -281,13 +286,19 @@ export default function OrderMessagesNav() {
       <nav className={pillClass} dir="rtl" aria-label="رسائل توضيحية">
         <MessagesMenu
           menuId="employee"
-          label="رسائل الموظفين"
+          label="طلبات عقد"
           alerts={employeeAlerts}
           isLoading={isLoading}
           isOpen={activeMenu === "employee"}
           onToggle={() => toggleMenu("employee")}
           onClose={() => setActiveMenu(null)}
           onSelect={handleSelect}
+        />
+        <DotSeparator />
+        <PricesMenu
+          isOpen={activeMenu === "prices"}
+          onToggle={() => toggleMenu("prices")}
+          onClose={() => setActiveMenu(null)}
         />
         <DotSeparator />
         <MessagesMenu
@@ -300,26 +311,12 @@ export default function OrderMessagesNav() {
           onClose={() => setActiveMenu(null)}
           onSelect={handleSelect}
         />
-        <DotSeparator />
-        <PricesTriggerButton
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setActiveMenu(null);
-            setPricesDialogOpen(true);
-          }}
-        />
       </nav>
 
       <OrderMessageDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         messageAlert={selectedAlert}
-      />
-
-      <OrderContractPeriodsDialog
-        open={pricesDialogOpen}
-        onOpenChange={setPricesDialogOpen}
       />
     </>
   );

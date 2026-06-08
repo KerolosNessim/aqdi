@@ -74,10 +74,10 @@ export default function BlockEmployeeDialog({ employee }) {
         <Button
           variant="outline"
           size="icon"
-          className={`size-8 rounded-full border transition-all ${
+          className={`w-9 h-9 rounded-full border-0 transition-all shadow-none ${
             isBlocked
-              ? "bg-red-50 text-red-500 hover:bg-red-100 border-red-200"
-              : "text-gray-500 hover:bg-red-50 hover:text-red-500 border-[#E4E4E4]"
+              ? "bg-[#E6FFE6] text-[#10B981] hover:bg-[#10B981] hover:text-white"
+              : "bg-[#F5F5F5] text-[#1A1A1A] hover:bg-[#E8E8E8]"
           }`}
         >
           <Ban className="size-4" />

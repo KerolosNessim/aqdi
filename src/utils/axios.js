@@ -3,10 +3,16 @@ import axios from "axios";
 
 import { useUserStore } from "@/src/stores/user-store";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+function getApiBaseUrl() {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api`;
+  }
+
+  return process.env.NEXT_PUBLIC_BASE_URL;
+}
 
 export const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: getApiBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
     },

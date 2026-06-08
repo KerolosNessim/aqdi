@@ -94,6 +94,7 @@ export default function AllOrdersWrapper() {
         <OrdersToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          showAddButtons
           queryKeys={["orders"]}
           showMoreFilters={showMoreFilters}
           onToggleMoreFilters={() => setShowMoreFilters((prev) => !prev)}
@@ -106,6 +107,7 @@ export default function AllOrdersWrapper() {
           statusItems={statusItems}
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
+          showAllCard={false}
           allTotal={allTotal}
           countsById={countsById}
         />

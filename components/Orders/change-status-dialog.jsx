@@ -15,7 +15,7 @@ export default function ChangeStatusDialog({ orderId, queryKey }) {
     color_text: '#000000',
     color: '#000000'
   });
-const queryClient=useQueryClient()
+  const queryClient = useQueryClient()
   /*-------------------------------------------------------------------------------------*/
   // get all status
   function getStatus() {
@@ -55,12 +55,22 @@ const queryClient=useQueryClient()
     mutationFn: changeStatus,
     onSuccess: (res) => {
       toast.success(res?.data?.message || "تم تغيير حالة الطلب")
-      queryClient.invalidateQueries(queryKey)
+      queryClient.invalidateQueries({ queryKey })
     },
     onError: (res) => {
-      console.log(res)
       toast.error(res?.response?.data?.message || "حدث خطأ أثناء تغيير حالة الطلب")
     }
+  })
+
+  const { mutate: deleteOrder, isPending: isDeleting } = useMutation({
+    mutationFn: () => axiosInstance.post(`/admin/orders/${orderId}/delete`),
+    onSuccess: (res) => {
+      toast.success(res?.data?.message || "تم حذف الطلب بنجاح")
+      queryClient.invalidateQueries({ queryKey })
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "حدث خطأ أثناء حذف الطلب")
+    },
   })
   return (
     <>
@@ -99,12 +109,21 @@ const queryClient=useQueryClient()
         <DropdownMenuSeparator className="bg-[#F5F5F5] my-1" />
 
         {/* حذف الطلب */}
-        <DropdownMenuItem className="cursor-pointer hover:bg-[#FFF5F5] text-red-600 rounded-lg p-2" onClick={() => {
-          toast.error('تم حذف الطلب')
-        }}>
+        <DropdownMenuItem
+          className="cursor-pointer hover:bg-[#FFF5F5] text-red-600 rounded-lg p-2"
+          disabled={isDeleting}
+          onClick={(e) => {
+            e.stopPropagation()
+            deleteOrder()
+          }}
+        >
           <TrashIcon className='text-red-600' />
           <span className="font-medium text-[13px] text-red-600">حذف الطلـب</span>
-          <i className="fa-solid fa-chevron-left mr-auto text-red-300 text-[10px]"></i>
+          {isDeleting ? (
+            <Loader2 className="animate-spin mr-auto size-4" />
+          ) : (
+            <i className="fa-solid fa-chevron-left mr-auto text-red-300 text-[10px]"></i>
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Filter, RefreshCw, Search } from "lucide-react";
+import { ArrowUpLeft, Filter, RefreshCw, Search } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "@/src/utils/axios";
 import AddCompleteOrder from "../add-complete-order";
@@ -10,9 +10,30 @@ import OrdersMoreFilters from "./orders-more-filters";
 import { hasActiveAdvancedFilters } from "./orders-filter-utils";
 
 const defaultQuickLinks = [
-  { emoji: "✅", label: "تم التوثيق", href: "/home/completed-orders", match: ["توثيق", "وثق", "مكتمل"] },
-  { emoji: "😎", label: "طلب واتساب مكتمل", href: "/home/completed-whatsapp", match: ["واتساب مكتمل", "واتساب المكتملة"] },
-  { emoji: "😞", label: "مسترجع", href: "/home/return-orders", match: ["مسترج", "استرجاع"] },
+  {
+    emoji: "✅",
+    label: "تم التوثيق",
+    href: "/home/completed-orders",
+    match: ["توثيق", "وثق", "مكتمل"],
+  },
+  {
+    emoji: "😎",
+    label: "طلب واتساب مكتمل",
+    href: "/home/completed-whatsapp",
+    match: ["واتساب مكتمل", "واتساب المكتملة"],
+  },
+  {
+    emoji: "😞",
+    label: "مسترجع",
+    href: "/home/return-orders",
+    match: ["مسترج", "استرجاع"],
+  },
+  {
+    emoji: "🤔",
+    label: "طلب واتساب غير مكتمل",
+    href: "/home/incompleted-whatsapp",
+    match: ["واتساب غير", "غير مكتمل", "واتساب الغير"],
+  },
 ];
 
 function getQuickLinkCount(items, matchPatterns) {
@@ -20,6 +41,29 @@ function getQuickLinkCount(items, matchPatterns) {
     matchPatterns.some((pattern) => entry.label_ar?.includes(pattern))
   );
   return item?.value ?? 0;
+}
+
+const formatQuickCount = (count) => {
+  const num = Number(count);
+  if (Number.isNaN(num)) return "00";
+  if (num > 99) return String(num);
+  return String(num).padStart(2, "0");
+};
+
+function QuickStatCard({ emoji, label, href, count }) {
+  return (
+    <Link
+      href={href}
+      className="relative flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-[14px] border border-[#EEEEEE] hover:border-brand-main hover:shadow-sm transition-all min-w-[140px]"
+    >
+      <span className="text-[18px] leading-none shrink-0">{emoji}</span>
+      <span className="text-[13px] font-bold text-black whitespace-nowrap">{label}</span>
+      <span className="text-[15px] font-black text-black tabular-nums ms-auto">
+        {formatQuickCount(count)}
+      </span>
+      <ArrowUpLeft className="absolute bottom-2 left-2 size-3 text-[#C4C4C4]" />
+    </Link>
+  );
 }
 
 export default function OrdersToolbar({
@@ -33,6 +77,7 @@ export default function OrdersToolbar({
   onAdvancedFiltersChange,
   onResetAll,
   showStatusField = true,
+  quickLinksLimit,
 }) {
   const queryClient = useQueryClient();
 
@@ -55,17 +100,34 @@ export default function OrdersToolbar({
 
   const filtersActive = hasActiveAdvancedFilters(advancedFilters);
 
+  const quickLinks = quickLinksLimit
+    ? defaultQuickLinks.slice(0, quickLinksLimit)
+    : defaultQuickLinks;
+
   return (
-    <div className="space-y-4 w-full">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-4 w-full" dir="rtl">
+      {/* Single row: add buttons | quick stats | search | refresh | filter */}
+      <div className="flex flex-wrap items-center gap-3 w-full">
         {showAddButtons && (
-          <>
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             <AddCompleteOrder />
             <AddInCompleteOrder />
-          </>
+          </div>
         )}
 
-        <div className="relative flex-1 min-w-[260px]">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          {quickLinks.map((link) => (
+            <QuickStatCard
+              key={link.href}
+              emoji={link.emoji}
+              label={link.label}
+              href={link.href}
+              count={getQuickLinkCount(analyticsItems, link.match)}
+            />
+          ))}
+        </div>
+
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3] size-5" />
           <input
             type="text"
@@ -74,22 +136,6 @@ export default function OrdersToolbar({
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
           />
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {defaultQuickLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-2 px-3 py-2 bg-white rounded-full border border-[#EEEEEE] hover:border-brand-main hover:shadow-sm transition-all text-[13px] font-bold text-black whitespace-nowrap"
-            >
-              <span>{link.emoji}</span>
-              <span>{link.label}</span>
-              <span className="bg-[#F5F5F5] text-[#616161] px-2 py-0.5 rounded-full text-[11px] min-w-[28px] text-center">
-                {getQuickLinkCount(analyticsItems, link.match)}
-              </span>
-            </Link>
-          ))}
         </div>
 
         <button

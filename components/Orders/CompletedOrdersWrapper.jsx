@@ -149,7 +149,7 @@ export default function CompletedOrdersWrapper() {
     const pagination = data?.data?.data?.pagination
 
     const filteredOrders = useMemo(
-        () => applyAdvancedFilters(orders, advancedFilters, { showStatusColumn: false }),
+        () => applyAdvancedFilters(orders, advancedFilters, { showStatusColumn: true }),
         [orders, advancedFilters]
     )
 
@@ -160,7 +160,7 @@ export default function CompletedOrdersWrapper() {
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
             <Header page='welcome' title={"طلب مكتمل"} isMain={false} first="الرئيــسية" firstURL="/" second="طلب مكتمل" secondURL="/home/completed-orders" />
 
-            <div className="flex flex-col gap-6 mt-4 relative z-10">
+            <div className="flex flex-col gap-4 mt-4 relative z-10">
                 <OrdersToolbar
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
@@ -172,11 +172,13 @@ export default function CompletedOrdersWrapper() {
                     onAdvancedFiltersChange={setAdvancedFilters}
                     onResetAll={handleResetAll}
                     showStatusField={false}
+                    quickLinksLimit={3}
                 />
                 <OrdersStatusCards
                     statusItems={statusItems}
                     activeFilter={activeFilter}
                     onFilterChange={setActiveFilter}
+                    showAllCard={false}
                     allTotal={allTotal}
                     countsById={countsById}
                 />
@@ -184,8 +186,9 @@ export default function CompletedOrdersWrapper() {
 
             <OrdersTable
                 orders={filteredOrders}
-                showStatusColumn={false}
-                showChangeStatus={false}
+                showStatusColumn
+                showChangeStatus
+                queryKey={["completedOrders"]}
                 onRowClick={(row) => router.push(`/home/orders/${row.id}`)}
             />
 

@@ -38,7 +38,7 @@ export default function DeleteEmployeeDialog({ employee, isSingle = false }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-red-600/20 text-red-600 hover:bg-red-600 hover:text-white size-8 rounded-full flex items-center justify-center p-0" size="icon">
+        <Button className="bg-[#FFEBEB] text-[#FF4D4F] hover:bg-[#FF4D4F] hover:text-white w-9 h-9 rounded-full flex items-center justify-center p-0 border-0 shadow-none" size="icon">
           <Trash2 className="size-4" />
         </Button>
       </DialogTrigger>

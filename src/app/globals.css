@@ -128,3 +128,15 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+/* Table headers */
+table thead,
+table thead tr {
+  background-color: #f2f2f2 !important;
+}
+
+table thead th {
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-bottom-color: #e4e4e4 !important;
+}

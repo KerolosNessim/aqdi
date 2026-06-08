@@ -1,6 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import Header from '../../home/Header'
+import SubPageHeader from '../../home/SubPageHeader'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import greenRial from '@/public/images/greenRial.svg'
 import Image from 'next/image'
 import waIcon from '@/public/images/waIcon.svg'
@@ -14,6 +16,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function OrdersAnalysisWrapper({ id }) {
     const router = useRouter()
+    const queryClient = useQueryClient()
     const [title, setTitle] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -250,32 +253,33 @@ export default function OrdersAnalysisWrapper({ id }) {
     const pagination = data?.data?.data?.pagination
 
 
+    const handleRefresh = () => {
+        setSearchQuery('')
+        setDebouncedSearchQuery('')
+        setCurrentPage(1)
+        queryClient.invalidateQueries({ queryKey: ['inCompletedOrders'] })
+    }
+
     if (isLoading) return <Loader />
 
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={title} isMain={false} first="الرئيــسية" firstURL="/" second='التحليــلات' secondURL="/home/analysis" third={title} thirdURL={`/home/financial-analysis/${id}`} />
+            <SubPageHeader
+                title={title}
+                isMain={false}
+                first="الرئيــسية"
+                firstURL="/"
+                second="التحليــلات"
+                secondURL="/home/analysis"
+                third={title}
+                thirdURL={`/home/incolpleted-orders-analysis/${id}`}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onRefresh={handleRefresh}
+            />
 
-            <div className="space-y-4 w-full mt-4">
-                <div className="flex items-center gap-3">
-                    <div className="relative grow">
-                        <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3]" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
-                            <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                        <input
-                            type="text"
-                            placeholder="البحث الذكي ...!"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4">
+            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4]">
                 <table className="w-full border-collapse">
                     <thead className="bg-[#FAFAFA]">
                         <tr>

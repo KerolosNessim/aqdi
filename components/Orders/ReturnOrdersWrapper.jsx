@@ -5,10 +5,10 @@ import orangerial from '@/public/images/orangerial.svg'
 import Image from 'next/image'
 import waIcon from '@/public/images/waIcon.svg'
 import Link from 'next/link'
-import Header from '../home/Header'
+import SubPageHeader from '../home/SubPageHeader'
 import { toast } from 'sonner'
 import { axiosInstance } from '@/src/utils/axios'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Loader from '../home/loader'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, ChevronLeft, Eye } from 'lucide-react'
@@ -77,6 +77,7 @@ export default function ReturnOrdersWrapper({ searchParams }) {
     const [resolvedParams, setResolvedParams] = useState(null)
     const [isResolved, setIsResolved] = useState(false)
     const router = useRouter()
+    const queryClient = useQueryClient()
     const [returnDialogOpen, setReturnDialogOpen] = useState(false)
     const [returnDialogOrder, setReturnDialogOrder] = useState(null)
 
@@ -184,35 +185,32 @@ export default function ReturnOrdersWrapper({ searchParams }) {
         }
     }
 
+    const handleRefresh = () => {
+        setSearchQuery('')
+        setDebouncedSearchQuery('')
+        setCurrentPage(1)
+        queryClient.invalidateQueries({ queryKey: ['returnOrders'] })
+        queryClient.invalidateQueries({ queryKey: ['refundContractsLookup'] })
+    }
+
     if (isLoading || !isResolved) return <Loader />
     if (isError) return <div className="text-center p-8 text-[#FA5252] text-[15px]">حدث خطأ أثناء تحميل بيانات طلبات الاسترجاع</div>
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
-            <Header page='welcome' title={getPageTitle()} isMain={false} first="الرئيــسية" firstURL="/" second="الطلبات المسترجعة" secondURL="/home/return-orders" />
+            <SubPageHeader
+                title={getPageTitle()}
+                isMain={false}
+                first="الرئيــسية"
+                firstURL="/"
+                second="الطلبات المسترجعة"
+                secondURL="/home/return-orders"
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onRefresh={handleRefresh}
+            />
 
-            <div className="flex flex-col gap-6 mt-4 relative z-10">
-                <div className="space-y-4 w-full">
-                    <div className="flex items-center gap-3">
-                        {/* search */}
-                        <div className="relative grow">
-                            <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3]" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
-                                <path d="M14 14l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="البحث الذكي ...!"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] mt-4 shadow-sm">
+            <div className="w-full overflow-x-auto bg-white rounded-[24px] border border-[#E4E4E4] shadow-sm">
                 <table className="w-full border-collapse">
                     <thead className="bg-[#FAFAFA]">
                         <tr>
