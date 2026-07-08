@@ -6,6 +6,11 @@ export const SUMMARY_OWNER_FIELDS = [
   { key: "property_owner_dob", label: "تاريخ الميلاد", type: "text" },
   { key: "property_owner_mobile", label: "رقم الجوال", type: "text" },
   //{ key: "property_owner_iban", label: "ايبان المالك", type: "text", colSpan: 2 },
+  {
+    key: "add_legal_agent_of_owner",
+    label: "إضافة ممثل أو وكيل شرعي لمالك العقار",
+    type: "boolean",
+  },
   { key: "notes_edits", label: "ملاحظات التعديل", type: "textarea", colSpan: 3 },
 ];
 

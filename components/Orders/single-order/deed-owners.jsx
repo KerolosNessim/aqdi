@@ -22,6 +22,7 @@ import AgencyDocumentViewerDialog, {
   LegalAgentStatusBadge,
   resolveAgencyDocumentUrl,
 } from "./agency-document-viewer-dialog";
+import UserRelatedContracts from "./user-related-contracts";
 
 const OrderSectionErrorMenu = dynamic(
   () => import("@/components/Orders/messages/order-section-error-menu"),
@@ -179,6 +180,8 @@ const DeedOwners = ({ data }) => {
                   />
                 </div>
               </div>
+
+              <UserRelatedContracts orderData={data} />
             </div>
           </SummaryFieldsLayout>
         </ContractStepEditor>

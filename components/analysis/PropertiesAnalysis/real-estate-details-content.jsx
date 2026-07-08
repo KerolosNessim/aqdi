@@ -111,7 +111,7 @@ export default function RealEstateDetailsContent({ data }) {
       </Section>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <Section title="تفاصيل العقار">
+        {/* <Section title="تفاصيل العقار">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DetailCard label="اسم العقار" value={data?.name_real_estate || data?.name_owner} borderColor="border-green-600" />
             <DetailCard label="نوع العقار" value={data?.property_type_name} borderColor="border-lime-500" />
@@ -122,7 +122,7 @@ export default function RealEstateDetailsContent({ data }) {
             <DetailCard label="عدد الطوابق" value={data?.number_of_floors} borderColor="border-gray-300" />
             <DetailCard label="نوع آخر" value={data?.type_real_estate_other} borderColor="border-gray-400" />
           </div>
-        </Section>
+        </Section> */}
 
         <Section title="العنوان الوطني">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -93,6 +93,8 @@ export const ROUTE_SECTION_RULES = [
   { prefix: '/home/completed-whatsapp', section: PERMISSION_SECTIONS.completed_whatsapp_request },
   { prefix: '/home/incolpleted-orders-analysis', section: PERMISSION_SECTIONS.incomplete_request },
   { prefix: '/home/completed-orders', section: PERMISSION_SECTIONS.completed_request },
+  { prefix: '/home/draft-contracts', section: PERMISSION_SECTIONS.all_requests },
+  { prefix: '/home/contract-paid', section: PERMISSION_SECTIONS.all_requests },
   { prefix: '/home/orders', section: PERMISSION_SECTIONS.all_requests },
   {
     prefix: '/home/analysis',
@@ -159,6 +161,8 @@ export const SIDEBAR_NAV = [
     group: 'العقــود',
     items: [
       { label: 'جميع الطلبات', href: '/home/orders', section: PERMISSION_SECTIONS.all_requests },
+      { label: 'مسودة العقود', href: '/home/draft-contracts', section: PERMISSION_SECTIONS.all_requests },
+      { label: 'إنشاء عقد مدفوع', href: '/home/contract-paid', section: PERMISSION_SECTIONS.all_requests },
       { label: 'طلـب مكتمـــل', href: '/home/completed-orders', section: PERMISSION_SECTIONS.completed_request },
       {
         label: 'طلـب غيــر مكتمل',

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import ChangeStatusDialog from "@/components/Orders/change-status-dialog";
+import ContractPaymentLinkButton from "@/components/Orders/single-order/contract-payment-link-button";
 
 const display = (v) => (v == null || v === "" ? "---" : String(v));
 
@@ -135,6 +136,8 @@ export default function LeaseRenewalHeader({
           queryKey={["single-order", orderData?.id]}
         />
       </div>
+
+      <ContractPaymentLinkButton orderData={orderData} />
 
       <button
         type="button"

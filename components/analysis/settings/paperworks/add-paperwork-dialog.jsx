@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { axiosInstance } from "@/src/utils/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import PaperworkIconField from "@/components/analysis/settings/paperworks/paperwork-icon-field";
+import { buildPaperworkFormData } from "@/components/analysis/settings/paperworks/paperwork-form-data";
 import { Loader2, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,20 +27,33 @@ export default function AddPaperworkDialog({ activeTab = "housing" }) {
   const [open, setOpen] = useState(false);
   const [nameAr, setNameAr] = useState("");
   const [nameEn, setNameEn] = useState("");
+  const [iconFile, setIconFile] = useState(null);
   const queryClient = useQueryClient();
+
+  const resetForm = () => {
+    setNameAr("");
+    setNameEn("");
+    setIconFile(null);
+  };
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
-      axiosInstance.post("/admin/paperworks", {
-        name_ar: nameAr,
-        name_en: nameEn,
-        contract_type: activeTab,
-      }),
+      axiosInstance.post(
+        "/admin/paperworks",
+        buildPaperworkFormData({
+          nameAr,
+          nameEn,
+          contractType: activeTab,
+          iconFile,
+        }),
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      ),
     onSuccess: (res) => {
       toast.success(res?.data?.message || "تم إضافة ورقة العمل بنجاح");
       setOpen(false);
-      setNameAr("");
-      setNameEn("");
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["paperworks", activeTab] });
     },
     onError: (error) => {
@@ -47,7 +62,14 @@ export default function AddPaperworkDialog({ activeTab = "housing" }) {
   });
 
   return (
-    <Dialog dir="rtl" open={open} onOpenChange={setOpen}>
+    <Dialog
+      dir="rtl"
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="bg-brand-hover text-white h-12">
           إضافة ورقة عمل
@@ -90,6 +112,8 @@ export default function AddPaperworkDialog({ activeTab = "housing" }) {
                 dir="ltr"
               />
             </div>
+
+            <PaperworkIconField file={iconFile} onFileChange={setIconFile} />
 
             <div className="space-y-2">
               <label className="text-sm font-medium">نوع العقد</label>

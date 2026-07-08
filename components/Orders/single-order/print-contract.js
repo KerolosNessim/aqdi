@@ -162,13 +162,13 @@ export function buildContractPrintHtml(orderData) {
   ])}
 
   ${section("تفاصيل العقار", [
-    ["استخدام العقار", step1.property_usages_name],
-    ["نوع العقار", step1.property_type_name],
-    ["إجمالي عدد الوحدات في كل طابق", step1.number_of_units_per_floor],
-    ["إجمالي عدد الطوابق", step1.number_of_floors],
-    ["عمر العقار", step1.age_of_the_property],
-    ["إجمالي عدد الوحدات في العقار", step1.number_of_units_in_realestate],
-    ["اسم مالك العقار", summary.name_owner],
+    // ["استخدام العقار", step1.property_usages_name],
+    // ["نوع العقار", step1.property_type_name],
+    // ["إجمالي عدد الوحدات في كل طابق", step1.number_of_units_per_floor],
+    // ["إجمالي عدد الطوابق", step1.number_of_floors],
+    // ["عمر العقار", step1.age_of_the_property],
+    // ["إجمالي عدد الوحدات في العقار", step1.number_of_units_in_realestate],
+    // ["اسم مالك العقار", summary.name_owner],
   ])}
 
   ${section("تفاصيل الوحدة", [

@@ -9,6 +9,7 @@ import {
   getOrderClientPhone,
   getOrderContractUuid,
 } from "@/components/Orders/messages/order-section-message-utils";
+import ContractPaymentLinkButton from "./contract-payment-link-button";
 import PrintContractButton from "./print-contract-button";
 
 const pillClass =
@@ -39,7 +40,10 @@ export default function OrderDetailsActions({ orderData }) {
 
   return (
     <div className="shrink-0 space-y-2">
-      <PrintContractButton orderData={orderData} />
+      <div className="flex items-center gap-2 flex-wrap">
+        <PrintContractButton orderData={orderData} />
+        <ContractPaymentLinkButton orderData={orderData} />
+      </div>
 
       <div className="flex items-center gap-2 flex-wrap">
         <button

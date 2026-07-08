@@ -18,6 +18,8 @@ import {
     applyAdvancedFilters,
     emptyAdvancedFilters,
 } from './shared/orders-filter-utils'
+import { exportOrdersToExcel } from './shared/orders-export'
+import { useOrdersSelection } from './shared/use-orders-selection'
 import { useOrderStatusCounts } from './shared/use-order-status-counts'
 
 export default function CompletedOrdersWrapper() {
@@ -29,6 +31,15 @@ export default function CompletedOrdersWrapper() {
     const [currentPage, setCurrentPage] = useState(1);
     const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [advancedFilters, setAdvancedFilters] = useState(emptyAdvancedFilters);
+    const {
+        selectedOrders,
+        selectedCount,
+        isSelected,
+        toggle,
+        togglePage,
+        clear,
+        getPageSelectionState,
+    } = useOrdersSelection();
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -119,6 +130,7 @@ export default function CompletedOrdersWrapper() {
         setAdvancedFilters(emptyAdvancedFilters);
         setShowMoreFilters(false);
         setCurrentPage(1);
+        clear();
         if (createdAtParam) {
             router.replace(pathname);
         }
@@ -127,6 +139,10 @@ export default function CompletedOrdersWrapper() {
     useEffect(() => {
         setCurrentPage(1);
     }, [activeFilter, debouncedSearchQuery, createdAtParam]);
+
+    useEffect(() => {
+        clear();
+    }, [activeFilter, debouncedSearchQuery, createdAtParam, advancedFilters, clear]);
 
     /*-------------------------------------------------------------------------------------*/
     // get completed orders
@@ -153,6 +169,17 @@ export default function CompletedOrdersWrapper() {
         [orders, advancedFilters]
     )
 
+    const exportConfig = useMemo(
+        () => ({
+            getSelectedOrders: () => selectedOrders,
+            onExport: (rows) =>
+                exportOrdersToExcel(rows, { filename: 'الطلبات-المكتملة', showStatusColumn: true }),
+        }),
+        [selectedOrders]
+    );
+
+    const pageSelectionState = getPageSelectionState(filteredOrders);
+
     /*-------------------------------------------------------------------------------------*/
     // loader
     if (isLoading || statusLoading) return <Loader />
@@ -173,6 +200,9 @@ export default function CompletedOrdersWrapper() {
                     onResetAll={handleResetAll}
                     showStatusField={false}
                     quickLinksLimit={3}
+                    exportConfig={exportConfig}
+                    selectedCount={selectedCount}
+                    onClearSelection={clear}
                 />
                 <OrdersStatusCards
                     statusItems={statusItems}
@@ -190,6 +220,11 @@ export default function CompletedOrdersWrapper() {
                 showChangeStatus
                 queryKey={["completedOrders"]}
                 onRowClick={(row) => router.push(`/home/orders/${row.id}`)}
+                selectable
+                isSelected={isSelected}
+                onToggleRow={toggle}
+                onTogglePage={togglePage}
+                pageSelectionState={pageSelectionState}
             />
 
             <OrdersPagination

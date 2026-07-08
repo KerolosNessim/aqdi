@@ -5,6 +5,7 @@ import waIcon from "@/public/images/waIcon.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import ChangeStatusDialog from "../change-status-dialog";
 import {
   getContractTypeBadgeClass,
@@ -54,8 +55,14 @@ export default function OrdersTable({
   showChangeStatus = true,
   queryKey = ["orders"],
   onRowClick,
+  selectable = false,
+  isSelected,
+  onToggleRow,
+  onTogglePage,
+  pageSelectionState = { all: false, some: false },
 }) {
   const tableHeaders = [
+    ...(selectable ? [""] : []),
     "رقــم الطلب",
     "رقــم جوال العميل",
     "نــوع العقــد",
@@ -72,7 +79,21 @@ export default function OrdersTable({
       <table className="w-full border-collapse">
         <thead className="bg-[#FAFAFA]">
           <tr>
-            {tableHeaders.map((header, index) => (
+            {selectable && (
+              <th className="p-[15px_20px] border-b border-[#E4E4E4] w-[52px]">
+                <Checkbox
+                  checked={
+                    pageSelectionState.some
+                      ? "indeterminate"
+                      : pageSelectionState.all
+                  }
+                  onCheckedChange={(checked) => onTogglePage?.(orders, checked === true)}
+                  aria-label="تحديد كل الطلبات في الصفحة"
+                  className="border-[#C4C4C4] data-[state=checked]:bg-[#10B981] data-[state=checked]:border-[#10B981]"
+                />
+              </th>
+            )}
+            {tableHeaders.slice(selectable ? 1 : 0).map((header, index) => (
               <th
                 key={index}
                 className="text-right p-[15px_20px] text-[#A3A3A3] text-[13px] font-medium border-b border-[#E4E4E4] whitespace-nowrap"
@@ -94,12 +115,29 @@ export default function OrdersTable({
               const statusName = row?.status?.name || row?.contract_status_name || "قيد المعالجة";
               const statusStyle = getOrderStatusBadgeStyle(statusName, row?.status?.color);
 
+              const rowSelected = selectable && isSelected?.(row.id);
+
               return (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
-                  className="border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer"
+                  className={`border-b border-[#F5F5F5] last:border-0 hover:bg-[#fafafa] transition-all cursor-pointer ${
+                    rowSelected ? "bg-[#F0FDF4]" : ""
+                  }`}
                 >
+                  {selectable && (
+                    <td
+                      className="p-[15px_20px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={rowSelected}
+                        onCheckedChange={() => onToggleRow?.(row)}
+                        aria-label={`تحديد الطلب ${row?.uuid}`}
+                        className="border-[#C4C4C4] data-[state=checked]:bg-[#10B981] data-[state=checked]:border-[#10B981]"
+                      />
+                    </td>
+                  )}
                   <td className="p-[15px_20px]">
                     <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-[#f9f9f9] rounded-lg w-fit mx-auto border border-[#eee]">
                       <span className="text-black text-[12px] font-bold">{row?.uuid}</span>

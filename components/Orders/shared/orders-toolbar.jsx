@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpLeft, Filter, RefreshCw, Search } from "lucide-react";
+import { ArrowUpLeft, FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { axiosInstance } from "@/src/utils/axios";
 import AddCompleteOrder from "../add-complete-order";
 import AddInCompleteOrder from "../add-incompleted-order";
@@ -78,8 +80,12 @@ export default function OrdersToolbar({
   onResetAll,
   showStatusField = true,
   quickLinksLimit,
+  exportConfig,
+  selectedCount = 0,
+  onClearSelection,
 }) {
   const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: analyticsData } = useQuery({
     queryKey: ["dashboard-analytics-quick"],
@@ -99,6 +105,33 @@ export default function OrdersToolbar({
   };
 
   const filtersActive = hasActiveAdvancedFilters(advancedFilters);
+
+  const handleExport = () => {
+    if (!exportConfig?.onExport) return;
+
+    const orders = exportConfig.getSelectedOrders?.() ?? [];
+    if (!orders.length) {
+      toast.error("يرجى تحديد طلب واحد على الأقل للتصدير");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const exported = exportConfig.onExport(orders);
+
+      if (exported === false) {
+        toast.error("لا توجد بيانات للتصدير");
+        return;
+      }
+
+      toast.success(`تم تصدير ${orders.length} طلب بنجاح`);
+      onClearSelection?.();
+    } catch {
+      toast.error("حدث خطأ أثناء تصدير البيانات");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const quickLinks = quickLinksLimit
     ? defaultQuickLinks.slice(0, quickLinksLimit)
@@ -137,6 +170,37 @@ export default function OrdersToolbar({
             className="w-full h-[46px] bg-[#F9F9F9] border border-[#EEEEEE] rounded-full pr-12 pl-4 text-[14px] focus:outline-none focus:border-brand-main focus:bg-white transition-all shadow-inner"
           />
         </div>
+
+        {exportConfig ? (
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isExporting || selectedCount === 0}
+            className="h-[46px] px-5 rounded-full border border-[#10B981] bg-white text-[#10B981] hover:bg-[#10B981] hover:text-white font-bold text-[14px] transition-all shadow-sm flex items-center gap-2 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+            title={
+              selectedCount > 0
+                ? `تصدير ${selectedCount} طلب محدد إلى Excel`
+                : "حدد الطلبات من الجدول أولاً"
+            }
+          >
+            <FileSpreadsheet className="size-4" />
+            {isExporting
+              ? "جاري التصدير..."
+              : selectedCount > 0
+                ? `تصدير Excel (${selectedCount})`
+                : "تصدير Excel"}
+          </button>
+        ) : null}
+
+        {selectedCount > 0 ? (
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="h-[46px] px-4 rounded-full border border-[#EEEEEE] bg-white text-[#4D4D4D] hover:border-[#10B981] hover:text-[#10B981] font-bold text-[13px] transition-all shrink-0"
+          >
+            إلغاء التحديد ({selectedCount})
+          </button>
+        ) : null}
 
         <button
           type="button"

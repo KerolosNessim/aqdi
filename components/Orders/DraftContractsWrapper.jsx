@@ -18,7 +18,10 @@ import { exportOrdersToExcel } from "./shared/orders-export";
 import { useOrdersSelection } from "./shared/use-orders-selection";
 import { useOrderStatusCounts } from "./shared/use-order-status-counts";
 
-export default function AllOrdersWrapper() {
+const DRAFT_CONTRACTS_QUERY_KEY = "draftContracts";
+const DRAFT_CONTRACTS_API = "/admin/contracts/draft";
+
+export default function DraftContractsWrapper() {
   const [activeFilter, setActiveFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -67,14 +70,14 @@ export default function AllOrdersWrapper() {
   const statusItems = statusData?.data?.data?.items;
 
   const { allTotal, byId: countsById } = useOrderStatusCounts(statusItems, {
-    baseUrl: "/admin/orders",
+    baseUrl: DRAFT_CONTRACTS_API,
     statusParam: "contract_status_id",
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", activeFilter, debouncedSearchQuery, currentPage],
+    queryKey: [DRAFT_CONTRACTS_QUERY_KEY, activeFilter, debouncedSearchQuery, currentPage],
     queryFn: () => {
-      let url = `/admin/orders?contract_status_id=${activeFilter}&page=${currentPage}`;
+      let url = `${DRAFT_CONTRACTS_API}?contract_status_id=${activeFilter}&page=${currentPage}`;
       if (debouncedSearchQuery) {
         url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
       }
@@ -94,7 +97,7 @@ export default function AllOrdersWrapper() {
     () => ({
       getSelectedOrders: () => selectedOrders,
       onExport: (rows) =>
-        exportOrdersToExcel(rows, { filename: "جميع-الطلبات", showStatusColumn: true }),
+        exportOrdersToExcel(rows, { filename: "مسودة-العقود", showStatusColumn: true }),
     }),
     [selectedOrders]
   );
@@ -109,12 +112,12 @@ export default function AllOrdersWrapper() {
     <div className="flex flex-col gap-6 p-6 min-h-screen" dir="rtl">
       <Header
         page="welcome"
-        title="جميع الطلبات"
+        title="مسودة العقود"
         isMain={false}
         first="الرئيــسية"
         firstURL="/"
-        second="جميع الطلبات"
-        secondURL="/home/orders"
+        second="مسودة العقود"
+        secondURL="/home/draft-contracts"
       />
 
       <div className="flex flex-col gap-6 mt-4 relative z-10">
@@ -122,7 +125,7 @@ export default function AllOrdersWrapper() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           showAddButtons
-          queryKeys={["orders"]}
+          queryKeys={[DRAFT_CONTRACTS_QUERY_KEY]}
           showMoreFilters={showMoreFilters}
           onToggleMoreFilters={() => setShowMoreFilters((prev) => !prev)}
           advancedFilters={advancedFilters}
@@ -147,7 +150,7 @@ export default function AllOrdersWrapper() {
         orders={filteredOrders}
         showStatusColumn
         showChangeStatus
-        queryKey={["orders"]}
+        queryKey={[DRAFT_CONTRACTS_QUERY_KEY]}
         onRowClick={(row) => router.push(`/home/orders/${row.id}`)}
         selectable
         isSelected={isSelected}

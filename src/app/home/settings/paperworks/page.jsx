@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePaperworks } from "@/src/hooks/use-paperworks";
 import { axiosInstance } from "@/src/utils/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Pentagon } from "lucide-react";
+import { Building2, FileText, Pentagon } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -42,7 +43,21 @@ function PaperworksGrid({ activeTab }) {
           key={item.id}
           className="bg-gray-200 rounded-[16px] border border-[#E4E4E4] p-4 transition-all"
         >
-          <h3 className="text-sm font-bold text-[#616161]">ورقة عمل</h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-sm font-bold text-[#616161]">ورقة عمل</h3>
+            <div className="relative size-10 shrink-0 rounded-xl overflow-hidden border border-[#E4E4E4] bg-white flex items-center justify-center">
+              {item.icon_url ? (
+                <Image
+                  src={item.icon_url}
+                  alt={item.name_ar || item.name || "أيقونة ورقة العمل"}
+                  fill
+                  className="object-contain p-1"
+                />
+              ) : (
+                <FileText className="size-5 text-[#A3A3A3]" />
+              )}
+            </div>
+          </div>
           <div className="mt-4 space-y-1">
             <p className="text-sm font-bold">{item.name_ar || item.name}</p>
             {item.name_en ? (

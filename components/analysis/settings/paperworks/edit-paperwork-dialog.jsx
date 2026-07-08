@@ -1,5 +1,10 @@
 "use client";
 
+import PaperworkIconField from "@/components/analysis/settings/paperworks/paperwork-icon-field";
+import {
+  buildPaperworkFormData,
+  extractPaperwork,
+} from "@/components/analysis/settings/paperworks/paperwork-form-data";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { axiosInstance } from "@/src/utils/axios";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -26,31 +31,96 @@ export default function EditPaperworkDialog({ paperwork }) {
   const [nameAr, setNameAr] = useState(paperwork?.name_ar || "");
   const [nameEn, setNameEn] = useState(paperwork?.name_en || "");
   const [contractType, setContractType] = useState(paperwork?.contract_type || "housing");
+  const [iconFile, setIconFile] = useState(null);
+  const [iconUrl, setIconUrl] = useState(paperwork?.icon_url || null);
   const queryClient = useQueryClient();
+
+  const { data: paperworkDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ["paperwork", paperwork?.id],
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/admin/paperworks/${paperwork.id}`);
+      return extractPaperwork(res.data);
+    },
+    enabled: open && !!paperwork?.id,
+    staleTime: 0,
+  });
 
   useEffect(() => {
     if (!open) return;
-    setNameAr(paperwork?.name_ar || "");
-    setNameEn(paperwork?.name_en || "");
-    setContractType(paperwork?.contract_type || "housing");
-  }, [open, paperwork]);
+
+    const source = paperworkDetails ?? paperwork;
+    setNameAr(source?.name_ar || "");
+    setNameEn(source?.name_en || "");
+    setContractType(source?.contract_type || "housing");
+    setIconUrl(source?.icon_url || null);
+    setIconFile(null);
+  }, [open, paperwork, paperworkDetails]);
+
+  const invalidatePaperworks = () => {
+    queryClient.invalidateQueries({ queryKey: ["paperworks"] });
+    queryClient.invalidateQueries({ queryKey: ["paperwork", paperwork?.id] });
+  };
+
+  const { mutate: deleteIcon, isPending: isDeletingIcon } = useMutation({
+    mutationFn: () =>
+      axiosInstance.post(
+        `/admin/paperworks/${paperwork?.id}`,
+        buildPaperworkFormData({
+          nameAr,
+          nameEn,
+          contractType,
+          deleteIcon: true,
+        }),
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      ),
+    onSuccess: (res) => {
+      toast.success(res?.data?.message || "تم حذف الأيقونة بنجاح");
+      setIconUrl(null);
+      setIconFile(null);
+      invalidatePaperworks();
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "حدث خطأ أثناء حذف الأيقونة");
+    },
+  });
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
-      axiosInstance.post(`/admin/paperworks/${paperwork?.id}`, {
-        name_ar: nameAr,
-        name_en: nameEn,
-        contract_type: contractType,
-      }),
+      axiosInstance.post(
+        `/admin/paperworks/${paperwork?.id}`,
+        buildPaperworkFormData({
+          nameAr,
+          nameEn,
+          contractType,
+          iconFile,
+        }),
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      ),
     onSuccess: (res) => {
       toast.success(res?.data?.message || "تم تعديل ورقة العمل بنجاح");
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["paperworks"] });
+      invalidatePaperworks();
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || "حدث خطأ أثناء تعديل ورقة العمل");
     },
   });
+
+  const handleRemoveIcon = () => {
+    if (iconFile) {
+      setIconFile(null);
+      setIconUrl(paperworkDetails?.icon_url || paperwork?.icon_url || null);
+      return;
+    }
+
+    if (iconUrl) {
+      deleteIcon();
+    }
+  };
 
   return (
     <Dialog dir="rtl" open={open} onOpenChange={setOpen}>
@@ -67,6 +137,10 @@ export default function EditPaperworkDialog({ paperwork }) {
           </div>
 
           <div className="space-y-4 text-right">
+            {isLoadingDetails ? (
+              <p className="text-sm text-[#A3A3A3] py-2">جاري تحميل البيانات...</p>
+            ) : null}
+
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 الاسم بالعربية <span className="text-red-500">*</span>
@@ -90,6 +164,14 @@ export default function EditPaperworkDialog({ paperwork }) {
               />
             </div>
 
+            <PaperworkIconField
+              iconUrl={iconUrl}
+              file={iconFile}
+              onFileChange={setIconFile}
+              onRemove={handleRemoveIcon}
+              isRemoving={isDeletingIcon}
+            />
+
             <div className="space-y-2">
               <label className="text-sm font-medium">نوع العقد</label>
               <Select value={contractType} onValueChange={setContractType}>
@@ -104,7 +186,7 @@ export default function EditPaperworkDialog({ paperwork }) {
             </div>
 
             <Button
-              disabled={isPending || !nameAr.trim() || !nameEn.trim()}
+              disabled={isPending || isLoadingDetails || !nameAr.trim() || !nameEn.trim()}
               onClick={() => mutate()}
               className="mx-auto block h-12 bg-brand-hover"
             >

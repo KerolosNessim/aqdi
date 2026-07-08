@@ -103,6 +103,7 @@ export function ContractStepEditor({
   fields,
   children,
   className = "",
+  showEdit = true,
 }) {
   const { orderData, updateContract, isSaving } = useSingleOrderContext();
   const [editing, setEditing] = useState(false);
@@ -169,43 +170,45 @@ export function ContractStepEditor({
           <FileText className="text-green-600 w-5 h-5" />
           <h3 className="text-gray-800 font-bold text-lg">{title}</h3>
         </div>
-        <div className="flex items-center gap-2">
-          {editing ? (
-            <>
+        {showEdit ? (
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 text-[#737373] text-sm font-bold px-3 py-2 rounded-full border border-[#E4E4E4] hover:bg-[#F5F5F5]"
+                >
+                  <X size={16} />
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 text-white bg-brand-hover text-sm font-bold px-4 py-2 rounded-full hover:bg-brand-hover/90 disabled:opacity-60"
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  حفظ
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                onClick={handleCancel}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 text-[#737373] text-sm font-bold px-3 py-2 rounded-full border border-[#E4E4E4] hover:bg-[#F5F5F5]"
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 text-green-600 hover:text-green-700 text-sm font-bold"
               >
-                <X size={16} />
-                إلغاء
+                <Edit size={16} />
+                <span>تعديل</span>
               </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 text-white bg-brand-hover text-sm font-bold px-4 py-2 rounded-full hover:bg-brand-hover/90 disabled:opacity-60"
-              >
-                {isSaving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save size={16} />
-                )}
-                حفظ
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 text-green-600 hover:text-green-700 text-sm font-bold"
-            >
-              <Edit size={16} />
-              <span>تعديل</span>
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {editing ? (

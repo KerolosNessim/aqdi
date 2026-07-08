@@ -22,6 +22,8 @@ import CommentList from "../comment/comment-list";
 const NAV_ICONS = {
   '/home/analysis': RiPentagonFill,
   '/home/orders': Box,
+  '/home/draft-contracts': Box,
+  '/home/contract-paid': Box,
   '/home/completed-orders': RiPentagonFill,
   '/home/incolpleted-orders-analysis/total': RiPentagonFill,
   '/home/completed-whatsapp': BiSolidFolder,

@@ -127,15 +127,28 @@ function tenantRoleIdsEqual(a, b) {
   );
 }
 
+const BOOLEAN_FIELD_KEYS = new Set([
+  "add_legal_agent_of_owner",
+  "is_there_a_legal_representative_of_the_tenant",
+  "furnished",
+  "kitchen_tank",
+]);
+
+const REQUIRED_BOOLEAN_DEFAULTS = {
+  add_legal_agent_of_owner: 0,
+};
+
 export function normalizeFieldValue(value, key) {
   if (key === "tenant_role_ids") {
     return parseTenantRoleIds(value);
+  }
+  if (BOOLEAN_FIELD_KEYS.has(key)) {
+    return value === 1 || value === "1" || value === true ? 1 : 0;
   }
   if (value === null || value === undefined) return "";
   if (Array.isArray(value)) {
     return value;
   }
-  if (typeof value === "boolean") return value ? 1 : 0;
   if (typeof value === "object") {
     if (value?.price != null) return String(value.price);
     return "";
@@ -181,6 +194,13 @@ export function buildContractUpdatePayload(step, form, initialForm) {
     }
 
     payload[key] = value;
+  }
+
+  for (const [key, defaultValue] of Object.entries(REQUIRED_BOOLEAN_DEFAULTS)) {
+    if (!allowed.has(key) || key in payload) continue;
+    const value = form[key];
+    payload[key] =
+      value === 1 || value === "1" || value === true ? 1 : defaultValue;
   }
 
   return payload;
